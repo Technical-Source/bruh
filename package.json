@@ -1,0 +1,28 @@
+{
+  "name": "bruh",
+  "description": "The thinnest possible layer between development and production for the modern web.",
+  "keywords": [
+    "frontend",
+    "backend",
+    "web",
+    "utilities",
+    "library",
+    "starter",
+    "template",
+    "modern"
+  ],
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Daniel Ethridge git.io/de",
+  "homepage": "https://github.com/Technical-Source/bruh#readme",
+  "repository": "https://github.com/Technical-Source/bruh.git",
+  "bugs": "https://github.com/Technical-Source/bruh/issues",
+  "main": "./src/index.mjs",
+  "bin": {
+    "bruh": "./src/cli/index.mjs"
+  },
+  "scripts": {},
+  "dependencies": {
+    "sharp": "^0.27.1"
+  }
+}
