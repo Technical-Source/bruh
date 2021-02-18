@@ -65,7 +65,7 @@ const getUnprocessedImages = async directory => {
   return (await Promise.all(promisedUnproccessedImages)).flat()
 }
 
-const processImages = async (directory = imagesDirectory) => {
+export const processImages = async (directory = imagesDirectory) => {
   const unprocessedImages = await getUnprocessedImages(directory)
   const processes = unprocessedImages
     .map(filePath => ({ filePath, file: readFile(filePath) }))
@@ -76,5 +76,3 @@ const processImages = async (directory = imagesDirectory) => {
     
   return Promise.allSettled(processes)
 }
-
-export default processImages
