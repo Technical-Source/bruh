@@ -40,6 +40,8 @@ export const t = string => {
       return builder
     }
   }
+
+  return builder
 }
 
 export const h = (name, namespace) => (...xs) => {
