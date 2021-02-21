@@ -17,22 +17,26 @@ export const h = (name, namespace) => {
 
     element,
 
-    bruh: properties => {
-      element.bruh = {}
+    bruh: (properties = {}) => {
+      if (!element.bruh)
+        element.bruh = {}
+
       Object.assign(element.bruh, properties)
 
       return builder
     },
 
-    attributes: attributes => {
+    attributes: (attributes = {}) => {
       Object.entries(attributes)
         .forEach(([name, value]) => element.setAttribute(name, value))
 
       return builder
     },
 
-    data: dataAttributes => {
+    data: (dataAttributes = {}) => {
       Object.assign(element.dataset, dataAttributes)
+
+      return builder
     },
 
     before: (...xs) => {
