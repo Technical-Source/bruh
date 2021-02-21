@@ -11,13 +11,15 @@
     "template",
     "modern"
   ],
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
   "author": "Daniel Ethridge git.io/de",
   "homepage": "https://github.com/Technical-Source/bruh#readme",
   "repository": "https://github.com/Technical-Source/bruh.git",
   "bugs": "https://github.com/Technical-Source/bruh/issues",
-  "main": "./src/index.mjs",
+  "exports": {
+    "./*": "./src/*.mjs"
+  },
   "bin": {
     "bruh": "./src/cli/index.mjs"
   },

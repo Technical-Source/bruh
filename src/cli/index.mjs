@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-import { processImages } from "../index.mjs"
+import { processImages } from "../process-images.mjs"
 
 processImages()
