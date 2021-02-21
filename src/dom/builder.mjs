@@ -49,7 +49,7 @@ export const h = (name, namespace) => (...xs) => {
     namespace ? document.createElementNS(namespace, name)
               : document.createElement  (           name)
 
-  node.append(...xs)
+  node.append(...toNode(xs))
 
   const builder = {
     isNodeBuilder: true,
