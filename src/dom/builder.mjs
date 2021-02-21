@@ -1,66 +1,107 @@
-export const t = string => document.createTextNode(string)
-
-const autoToElement = xs =>
+const toNode = xs =>
   xs.map(x =>
-    x.isBuilder
-      ? x.element
+    x.isNodeBuilder
+      ? x.node
       : x
   )
 
+export const t = string => {
+  const node = document.createTextNode(string)
+
+  const builder = {
+    isNodeBuilder: true,
+    isTextNode: true,
+    node,
+
+    bruh: (properties = {}) => {
+      if (!node.bruh)
+        node.bruh = {}
+
+      Object.assign(node.bruh, properties)
+
+      return builder
+    },
+
+    text: (string = "") => {
+      node.textContent = string
+
+      return builder
+    },
+
+    before: (...xs) => {
+      node.before(...toNode(xs))
+
+      return builder
+    },
+
+    after: (...xs) => {
+      node.after(...toNode(xs))
+
+      return builder
+    }
+  }
+}
+
 export const h = (name, namespace) => (...xs) => {
-  const element =
+  const node =
     namespace ? document.createElementNS(namespace, name)
               : document.createElement  (           name)
 
-  element.append(...xs)
+  node.append(...xs)
 
   const builder = {
-    isBuilder: true,
-
-    element,
+    isNodeBuilder: true,
+    isElement: true,
+    node,
 
     bruh: (properties = {}) => {
-      if (!element.bruh)
-        element.bruh = {}
+      if (!node.bruh)
+        node.bruh = {}
 
-      Object.assign(element.bruh, properties)
+      Object.assign(node.bruh, properties)
 
       return builder
     },
 
     attributes: (attributes = {}) => {
       Object.entries(attributes)
-        .forEach(([name, value]) => element.setAttribute(name, value))
+        .forEach(([name, value]) => node.setAttribute(name, value))
 
       return builder
     },
 
     data: (dataAttributes = {}) => {
-      Object.assign(element.dataset, dataAttributes)
+      Object.assign(node.dataset, dataAttributes)
+
+      return builder
+    },
+
+    text: (string = "") => {
+      node.textContent = string
 
       return builder
     },
 
     before: (...xs) => {
-      element.before(...autoToElement(xs))
+      node.before(...toNode(xs))
 
       return builder
     },
 
     prepend: (...xs) => {
-      element.prepend(...autoToElement(xs))
+      node.prepend(...toNode(xs))
 
       return builder
     },
 
     append: (...xs) => {
-      element.append(...autoToElement(xs))
+      node.append(...toNode(xs))
 
       return builder
     },
 
     after: (...xs) => {
-      element.after(...autoToElement(xs))
+      node.after(...toNode(xs))
 
       return builder
     }
