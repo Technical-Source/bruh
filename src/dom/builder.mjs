@@ -7,10 +7,12 @@ const autoToElement = xs =>
       : x
   )
 
-export const h = (name, namespace) => {
+export const h = (name, namespace) => (...xs) => {
   const element =
     namespace ? document.createElementNS(namespace, name)
               : document.createElement  (           name)
+
+  element.append(...xs)
 
   const builder = {
     isBuilder: true,
