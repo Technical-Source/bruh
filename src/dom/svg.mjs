@@ -15,7 +15,7 @@ copy(
 The <switch> tag is exported as `svgSwitch` because `switch` is reserved
 */
 export const
-  svg = h("svg", "http://www.w3.org/2000/svg").attributes({ xmlns: "http://www.w3.org/2000/svg" }),
+  svg = (...xs) => h("svg", "http://www.w3.org/2000/svg")(...xs).attributes({ xmlns: "http://www.w3.org/2000/svg" }),
   a = h("a", "http://www.w3.org/2000/svg"),
   animate = h("animate", "http://www.w3.org/2000/svg"),
   animateMotion = h("animateMotion", "http://www.w3.org/2000/svg"),
