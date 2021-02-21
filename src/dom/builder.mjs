@@ -31,6 +31,10 @@ export const h = (name, namespace) => {
       return builder
     },
 
+    data: dataAttributes => {
+      Object.assign(element.dataset, dataAttributes)
+    },
+
     before: (...xs) => {
       element.before(...autoToElement(xs))
 
