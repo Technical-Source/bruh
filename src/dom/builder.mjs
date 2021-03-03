@@ -50,7 +50,7 @@ export const t = string => {
   return builder
 }
 
-export const h = (name, namespace) => (...xs) => {
+export const e = (name, namespace) => (...xs) => {
   const node =
     namespace ? document.createElementNS(namespace, name)
               : document.createElement  (           name)
