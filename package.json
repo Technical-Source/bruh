@@ -26,5 +26,13 @@
   "scripts": {},
   "dependencies": {
     "sharp": "^0.27.1"
-  }
+  },
+  "browserslist": [
+    "ios_saf >= 12.4",
+    "and_chr >= 88",
+    "chrome  >= 87",
+    "safari  >= 13.1",
+    "edge    >= 87",
+    "firefox >= 84"
+  ]
 }
