@@ -22,6 +22,12 @@ export const t = string => {
       return builder
     },
 
+    properties: (properties = {}) => {
+      Object.assign(node, properties)
+
+      return builder
+    },
+
     text: (string = "") => {
       node.textContent = string
 
@@ -68,6 +74,12 @@ export const h = (name, namespace) => (...xs) => {
     attributes: (attributes = {}) => {
       Object.entries(attributes)
         .forEach(([name, value]) => node.setAttribute(name, value))
+
+      return builder
+    },
+
+    properties: (properties = {}) => {
+      Object.assign(node, properties)
 
       return builder
     },
