@@ -13,35 +13,17 @@ export const t = string => {
     isTextNode: true,
     node,
 
-    bruh: (properties = {}) => {
+    bruh: (f = () => {}) => {
       if (!node.bruh)
         node.bruh = {}
 
-      Object.assign(node.bruh, properties)
+      Object.assign(node.bruh, f(node))
 
       return builder
     },
 
     properties: (properties = {}) => {
       Object.assign(node, properties)
-
-      return builder
-    },
-
-    text: (string = "") => {
-      node.textContent = string
-
-      return builder
-    },
-
-    before: (...xs) => {
-      node.before(...toNode(xs))
-
-      return builder
-    },
-
-    after: (...xs) => {
-      node.after(...toNode(xs))
 
       return builder
     }
@@ -62,11 +44,17 @@ export const e = (name, namespace) => (...xs) => {
     isElement: true,
     node,
 
-    bruh: (properties = {}) => {
+    bruh: (f = () => {}) => {
       if (!node.bruh)
         node.bruh = {}
 
-      Object.assign(node.bruh, properties)
+      Object.assign(node.bruh, f(node))
+
+      return builder
+    },
+
+    properties: (properties = {}) => {
+      Object.assign(node, properties)
 
       return builder
     },
@@ -78,26 +66,8 @@ export const e = (name, namespace) => (...xs) => {
       return builder
     },
 
-    properties: (properties = {}) => {
-      Object.assign(node, properties)
-
-      return builder
-    },
-
     data: (dataAttributes = {}) => {
       Object.assign(node.dataset, dataAttributes)
-
-      return builder
-    },
-
-    text: (string = "") => {
-      node.textContent = string
-
-      return builder
-    },
-
-    before: (...xs) => {
-      node.before(...toNode(xs))
 
       return builder
     },
@@ -110,12 +80,6 @@ export const e = (name, namespace) => (...xs) => {
 
     append: (...xs) => {
       node.append(...toNode(xs))
-
-      return builder
-    },
-
-    after: (...xs) => {
-      node.after(...toNode(xs))
 
       return builder
     }
