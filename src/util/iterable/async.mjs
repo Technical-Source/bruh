@@ -56,6 +56,12 @@ export const toArray = async iterable => {
   return array
 }
 
+// Simply consume the async iterable without caring
+// about the values. Useful for effects.
+export const run = async iterable => {
+  for await (const x of iterable) {}
+}
+
 // Run a function for each value of an async iterable
 export const forEach = f =>
   async iterable => {
@@ -111,3 +117,19 @@ export const reduce = (f, initial) =>
       accumulator = f(accumulator, x)
     return accumulator
   }
+
+// Make an async iterable of arrays of values from the same index
+// that has a function applied to it
+export const zipWith = f =>
+  async function*(iterables) {
+    const iterators = iterables.map(x => x[Symbol.asyncIterator]())
+    while (true) {
+      const current = await Promise.all(iterators.map(x => x.next()))
+      if (current.some(x => x.done))
+        return
+      yield f(current.map(x => x.value))
+    }
+  }
+
+// Make an async iterable of arrays of values from the same index
+export const zip = zipWith(xs => xs)
