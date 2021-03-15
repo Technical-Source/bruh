@@ -18,22 +18,13 @@ const webp = async (filePath, file) =>
 const json = async (filePath, file) => {
   const info = {}
 
-  const image = sharp(await file)
-  const { hasAlpha } = await image.metadata()
-  if (!hasAlpha) {
-    const buffer = await image
-      .resize({ fit: "inside", width: 16, height: 16 })
-      .blur()
-      .webp({ reductionEffort: 6 })
-      .toBuffer()
-    const uri = `data:image/webp;base64,${buffer.toString("base64")}`
-    info.lqip = {
-      "backgroundImage": `url(${uri})`
-    }
-  }
-  else {
-    info.lqip = {}
-  }
+  const buffer = await sharp(await file)
+    .resize({ fit: "inside", width: 16, height: 16 })
+    .blur()
+    .webp({ reductionEffort: 6 })
+    .toBuffer()
+
+  info.lqip = `data:image/webp;base64,${buffer.toString("base64")}`
   return writeFile(`${filePath}.json`, JSON.stringify(info))
 }
 
