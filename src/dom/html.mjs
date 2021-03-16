@@ -71,6 +71,11 @@ export const
   footer     = e("footer"),     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer           - The HTML <footer> element represents a footer for its nearest sectioning content or sectioning root element. A footer typically contains information about the author of the section, copyright data or links to related documents.
   header     = e("header"),     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header           - The HTML <header> element represents introductory content, typically a group of introductory or navigational aids. It may contain some heading elements but also a logo, a search form, an author name, and other elements.
   h1         = e("h1"),         // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements - The HTML <h1>–<h6> elements represent six levels of section headings. <h1> is the highest section level and <h6> is the lowest.
+  h2         = e("h2"),
+  h3         = e("h3"),
+  h4         = e("h4"),
+  h5         = e("h5"),
+  h6         = e("h6"),
   hgroup     = e("hgroup"),     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup           - The HTML <hgroup> element represents a multi-level heading for a section of a document. It groups a set of <h1>–<h6> elements.
   main       = e("main"),       // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main             - The HTML <main> element represents the dominant content of the body of a document. The main content area consists of content that is directly related to or expands upon the central topic of a document, or the central functionality of an application.
   nav        = e("nav"),        // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav              - The HTML <nav> element represents a section of a page whose purpose is to provide navigation links, either within the current document or to other documents. Common examples of navigation sections are menus, tables of contents, and indexes.

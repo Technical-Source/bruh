@@ -7,9 +7,9 @@
     "url": "https://git.io/de"
   },
   "scripts": {
-    "prerender": "node ./src/prerender.mjs",
-    "bundle": "rollup --config",
-    "build": "npm run prerender && npm run bundle",
+    "build:html": "node ./src/prerender.mjs",
+    "build:js": "rollup --config",
+    "build": "npm run build:html && npm run build:js",
     "serve": "python3 -m http.server --directory ./dist/ --"
   },
   "dependencies": {
