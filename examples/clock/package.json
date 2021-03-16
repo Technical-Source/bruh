@@ -1,0 +1,23 @@
+{
+  "name": "clock-example",
+  "description": "A simple example of how bruh can be used.",
+  "private": true,
+  "author": {
+    "name": "Daniel Ethridge",
+    "url": "https://git.io/de"
+  },
+  "scripts": {
+    "prerender": "node ./src/prerender.mjs",
+    "bundle": "rollup --config",
+    "build": "npm run prerender && npm run bundle",
+    "serve": "python3 -m http.server --directory ./dist/ --"
+  },
+  "dependencies": {
+    "bruh": "file:../.."
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "rollup": "^2.41.2",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}

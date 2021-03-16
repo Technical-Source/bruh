@@ -1,6 +1,4 @@
-`app.mjs`
-```javascript
-import { t, section, h1 } from "bruh/dom"
+import { t, section, h1, hr } from "bruh/dom/html"
 import { svg, circle } from "bruh/dom/svg"
 
 let seconds = 0
@@ -39,38 +37,8 @@ export const app =
     h1(secondsText, " seconds so far...")
       .data({ awesome: true }),
     "other text",
+    hr(),
     svg().attributes({ viewBox: "0 0 10 10" }).append(
       circle().attributes({ cx: 5, cy: 5, r: 2 })
     )
   )
-```
-
-`prerender.mjs`
-```javascript
-import { html, head, title, body } from "bruh/dom"
-import { app } from "./app.mjs"
-
-export default
-  html(
-    head(
-      title("My epic app")
-    ),
-    body(
-      // Add a `data-bruh` attribute to mark it
-      // for later rebinding in the browser
-      app.data({ bruh: "" })
-    )
-  ).toString()
-```
-
-`browser.mjs`
-```javascript
-import { rebind } from "bruh/dom"
-import { app, secondsText } from "./app.mjs"
-
-// Rebind all node builder objects to the prerendered document
-rebind(app)
-// We can now access the actual DOM node that got rebound to
-// the imported meta text node and do arbitrary things with it
-secondsText.node.bruh.startClock()
-```
