@@ -79,7 +79,6 @@ export const
   set                 = e("set",                 "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/set
   stop                = e("stop",                "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/stop
   style               = e("style",               "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/style
-  svg                 = e("svg",                 "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg
   svgSwitch           = e("switch",              "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/switch
   symbol              = e("symbol",              "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/symbol
   text                = e("text",                "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/text

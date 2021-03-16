@@ -1,6 +1,12 @@
 // Turn an iterable into an array
 export const toArray = Array.from
 
+// Simply consume the iterable without caring
+// about the values. Useful for effects.
+export const run = iterable => {
+  for (const x of iterable) {}
+}
+
 // Run a function for each value of an iterable
 export const forEach = f =>
   iterable => {
@@ -56,3 +62,19 @@ export const reduce = (f, initial) =>
       accumulator = f(accumulator, x)
     return accumulator
   }
+
+// Make an iterable of arrays of values from the same index
+// that has a function applied to it
+export const zipWith = f =>
+  function*(iterables) {
+    const iterators = iterables.map(x => x[Symbol.iterator]())
+    while (true) {
+      const current = iterators.map(x => x.next())
+      if (current.some(x => x.done))
+        return
+      yield f(current.map(x => x.value))
+    }
+  }
+
+// Make an iterable of arrays of values from the same index
+export const zip = zipWith(xs => xs)
