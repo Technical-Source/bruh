@@ -8,7 +8,7 @@ const document =
   html(
     head(
       title("My epic app"),
-      script().attributes({ type: "module", defer: "", src: "./index.mjs" })
+      script({ type: "module", defer: "", src: "./index.mjs" })
     ),
     body(
       // Add a `data-bruh` attribute to mark it

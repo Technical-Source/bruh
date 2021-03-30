@@ -33,12 +33,12 @@ export const secondsText = t(seconds)
 // It can be prerendered for initial serve
 // and rebound in the browser
 export const app =
-  section().attributes({ class: "bruh moment" }).append(
+  section({ class: "bruh moment" },
     h1(secondsText, " seconds so far...")
       .data({ awesome: true }),
     "other text",
     hr(),
-    svg().attributes({ viewBox: "0 0 10 10" }).append(
-      circle().attributes({ cx: 5, cy: 5, r: 2 })
+    svg({ viewBox: "0 0 10 10" },
+      circle({ cx: 5, cy: 5, r: 2 })
     )
   )

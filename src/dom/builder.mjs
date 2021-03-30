@@ -77,14 +77,25 @@ export const t = textContent => {
 }
 
 // childNodeBuilders may contain strings
-export const e = (name, namespace) => (...childNodeBuilders) => {
+export const e = (name, namespace) => (...variadic) => {
+  const isAttributes = x =>
+    !x.isNodeBuilder && typeof x == "object"
+
+  let attributes, childNodeBuilders
+  if (variadic[0] && isAttributes(variadic[0]))
+    [attributes, ...childNodeBuilders] = variadic
+  else {
+    attributes = {}
+    childNodeBuilders = variadic
+  }
+
   const meta = {
     name,
     namespace,
     childNodeBuilders,
     bruhFunction: () => {},
     properties: {},
-    attributes: {},
+    attributes,
     dataset: {}
   }
 
