@@ -211,7 +211,7 @@ export class ElementBuilder extends NodeBuilder {
 export const t = textContent =>
   new TextNodeBuilder(textContent)
 
-export const e = (name, namespace) => (...variadic) => {debugger
+export const e = (name, namespace) => (...variadic) => {
   const builder = new ElementBuilder(name, namespace)
 
   // Implement optional attributes as first argument

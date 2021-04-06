@@ -114,7 +114,7 @@ export const reduce = (f, initial) =>
   async iterable => {
     let accumulator = initial
     for await (const x of iterable)
-      accumulator = f(accumulator, x)
+      accumulator = await f(accumulator, x)
     return accumulator
   }
 
