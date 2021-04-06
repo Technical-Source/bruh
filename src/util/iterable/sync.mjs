@@ -63,6 +63,16 @@ export const reduce = (f, initial) =>
     return accumulator
   }
 
+// Concatenate iterables (not merge/interleave)
+export const concat = (...tail) =>
+  function*(head) {
+    for (const x of head)
+      yield x
+    for (const iterable of tail)
+      for (const x of iterable)
+        yield x
+  }
+
 // Make an iterable of arrays of values from the same index
 // that has a function applied to it
 export const zipWith = f =>
@@ -72,9 +82,9 @@ export const zipWith = f =>
       const current = iterators.map(x => x.next())
       if (current.some(x => x.done))
         return
-      yield f(current.map(x => x.value))
+      yield f(...current.map(x => x.value))
     }
   }
 
 // Make an iterable of arrays of values from the same index
-export const zip = zipWith(xs => xs)
+export const zip = zipWith((...xs) => xs)

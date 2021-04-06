@@ -28,7 +28,7 @@ const rebind = (nodeBuilder, node = document.querySelector("[data-bruh]")) => {
           .filter(cnb => typeof cnb != "string"), // Ignore bare text nodes
         node.children
       ],
-      zipWith(([cnb, cn]) => rebind(cnb, cn)),
+      zipWith((cnb, cn) => rebind(cnb, cn)),
       run
     )
   }

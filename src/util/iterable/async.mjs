@@ -114,8 +114,18 @@ export const reduce = (f, initial) =>
   async iterable => {
     let accumulator = initial
     for await (const x of iterable)
-      accumulator = await f(accumulator, x)
+      accumulator = f(accumulator, x)
     return accumulator
+  }
+
+// Concatenate async iterables (not merge/interleave)
+export const concat = (...tail) =>
+  async function*(head) {
+    for await (const x of head)
+      yield x
+    for (const iterable of tail)
+      for await (const x of iterable)
+        yield x
   }
 
 // Make an async iterable of arrays of values from the same index
@@ -127,9 +137,9 @@ export const zipWith = f =>
       const current = await Promise.all(iterators.map(x => x.next()))
       if (current.some(x => x.done))
         return
-      yield f(current.map(x => x.value))
+      yield f(...current.map(x => x.value))
     }
   }
 
 // Make an async iterable of arrays of values from the same index
-export const zip = zipWith(xs => xs)
+export const zip = zipWith((...xs) => xs)
