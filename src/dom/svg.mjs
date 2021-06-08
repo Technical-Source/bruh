@@ -1,5 +1,5 @@
-import { e } from "./builder.mjs"
-export { t, e } from "./builder.mjs"
+import { e } from "./metaNode.mjs"
+export { t, e } from "./metaNode.mjs"
 
 /*
 Notes:
@@ -20,7 +20,9 @@ The <switch> tag is exported as `svgSwitch` because `switch` is reserved
 export const
   svg      = (...xs) => e("svg",                 "http://www.w3.org/2000/svg")  // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg
                           (...xs)
-                          .attributes({ xmlns: "http://www.w3.org/2000/svg" }),
+                          .addAttributes({
+                            xmlns: "http://www.w3.org/2000/svg"
+                          }),
   a                   = e("a",                   "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/a
   animate             = e("animate",             "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animate
   animateMotion       = e("animateMotion",       "http://www.w3.org/2000/svg"), // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateMotion

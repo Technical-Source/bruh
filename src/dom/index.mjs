@@ -1,3 +1,3 @@
 export * from "./html.mjs"
 
-export { default as rebind } from "./rebind.mjs"
+export { default as hydrate } from "./hydrate.mjs"

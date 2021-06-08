@@ -1,7 +1,7 @@
 import { writeFile } from "fs/promises"
 
 import { html, head, title, body, script } from "bruh/dom/html"
-import { app } from "./app.mjs"
+import app from "./app/prerender.mjs"
 
 const document =
   "<!doctype html>" +
@@ -11,9 +11,7 @@ const document =
       script({ type: "module", defer: "", src: "./index.mjs" })
     ),
     body(
-      // Add a `data-bruh` attribute to mark it
-      // for later rebinding in the browser
-      app.data({ bruh: "" })
+      app()
     )
   ).toString()
 

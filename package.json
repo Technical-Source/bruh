@@ -11,7 +11,7 @@
     "template",
     "modern"
   ],
-  "version": "1.0.18",
+  "version": "1.1.0",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -28,7 +28,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "sharp": "^0.27.1"
+    "sharp": "^0.28.3"
   },
   "browserslist": [
     "ios_saf >= 12.4",
