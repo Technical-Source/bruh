@@ -2,8 +2,6 @@ import sharp from "sharp"
 import { readdir, readFile, writeFile } from "fs/promises"
 import { extname, join } from "path"
 
-const imagesDirectory = join(process.cwd(), "public", "images")
-
 const avif = async (filePath, file) =>
   sharp(await file)
     .avif({  })
@@ -56,7 +54,7 @@ const getUnprocessedImages = async directory => {
   return (await Promise.all(promisedUnproccessedImages)).flat()
 }
 
-export const processImages = async (directory = imagesDirectory) => {
+export const processImages = async directory => {
   const unprocessedImages = await getUnprocessedImages(directory)
   const processes = unprocessedImages
     .map(filePath => ({ filePath, file: readFile(filePath) }))

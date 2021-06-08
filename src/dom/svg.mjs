@@ -1,5 +1,4 @@
-import { e } from "./metaNode.mjs"
-export { t, e } from "./metaNode.mjs"
+import { e } from "./meta-node.mjs"
 
 /*
 Notes:

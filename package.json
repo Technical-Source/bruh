@@ -11,23 +11,32 @@
     "template",
     "modern"
   ],
-  "version": "1.1.0",
+  "version": "1.2.0",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
     "url": "https://git.io/de"
   },
-  "homepage": "https://github.com/Technical-Source/bruh#readme",
+  "homepage": "https://technialsource.dev/bruh",
   "repository": "https://github.com/Technical-Source/bruh.git",
   "bugs": "https://github.com/Technical-Source/bruh/issues",
   "exports": {
-    "./*": "./src/*.mjs"
+    "./": "./src/dom/html.mjs",
+    "./dom": "./src/dom/html.mjs",
+    "./dom/meta-node": "./src/dom/meta-node.mjs",
+    "./dom/html": "./src/dom/html.mjs",
+    "./dom/svg": "./src/dom/svg.mjs",
+    "./util": "./src/util/index.mjs",
+    "./util/iterable/async": "./src/util/iterable/async.mjs",
+    "./util/iterable/sync": "./src/util/iterable/sync.mjs",
+    "./media/images": "./src/media/images.mjs"
   },
   "bin": {
     "bruh": "./src/cli/index.mjs"
   },
   "scripts": {},
   "dependencies": {
+    "commander": "^7.2.0",
     "sharp": "^0.28.3"
   },
   "browserslist": [

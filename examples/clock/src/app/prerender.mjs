@@ -1,4 +1,5 @@
-import { t, section, h1, hr } from "bruh/dom/html"
+import { t } from "bruh/dom/meta-node"
+import { section, h1, hr } from "bruh/dom/html"
 import { svg, circle } from "bruh/dom/svg"
 
 export const seconds = t(0)
