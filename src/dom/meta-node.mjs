@@ -150,7 +150,7 @@ export class MetaElement extends MetaNode {
       const contents =
         this.children
           .map(child =>
-            (child instanceof MetaNode || x instanceof MetaRawString)
+            (child instanceof MetaNode || child instanceof MetaRawString)
               ? child.toString()
               : escapeForElement(child + "")
           ).join("")
