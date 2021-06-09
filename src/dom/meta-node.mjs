@@ -30,7 +30,7 @@ const isVoidElement = element =>
 const escapeForElement = string =>
   string
     .replace(/&/g, "&amp;")
-    .replace(/<\//g, "&lt;/")
+    .replace(/</g, "&lt;")
 
 // https://html.spec.whatwg.org/multipage/syntax.html#syntax-attribute-value
 const escapeForDoubleQuotedAttribute = string =>
