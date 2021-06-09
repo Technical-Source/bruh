@@ -40,6 +40,7 @@ const escapeForDoubleQuotedAttribute = string =>
 
 const isAttributes = x =>
   !(x instanceof MetaNode) &&
+  !(x instanceof MetaRawString) &&
   typeof x == "object"
 
 
@@ -139,7 +140,7 @@ export class MetaElement extends MetaNode {
         .map(([name, value]) =>
           value == ""
             ? ` ${name}`
-            : ` ${name}="${escapeForDoubleQuotedAttribute(value.toString())}"`
+            : ` ${name}="${escapeForDoubleQuotedAttribute(value + "")}"`
         ).join("")
     // https://html.spec.whatwg.org/multipage/syntax.html#syntax-start-tag
     const startTag = `<${this.name}${attributes}>`
@@ -150,9 +151,9 @@ export class MetaElement extends MetaNode {
       const contents =
         this.children
           .map(child =>
-            typeof child == "string"
-              ? escapeForElement(child)
-              : child.toString()
+            child instanceof MetaNode
+              ? child.toString()
+              : escapeForElement(child + "")
           ).join("")
       // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
       const endTag = `</${this.name}>`
@@ -171,7 +172,7 @@ export class MetaElement extends MetaNode {
       .map(child =>
         child instanceof MetaNode
           ? child.toNode()
-          : child // Allow strings to become bare text nodes
+          : child + "" // Coerce to a string to become a bare text node
       )
     )
     // Assign properties, attributes, dataset, and run onHydrate
@@ -239,6 +240,16 @@ export class MetaElement extends MetaNode {
   }
 }
 
+export class MetaRawString {
+  constructor(string) {
+    this.string = string
+  }
+
+  toString() {
+    return this.string
+  }
+}
+
 // Convenience functions
 
 export const t = textContent =>
@@ -257,3 +268,6 @@ export const e = (name, namespace) => (...variadic) => {
 
   return meta
 }
+
+export const rawString = string =>
+  new MetaRawString(string)
