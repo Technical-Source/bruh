@@ -39,8 +39,7 @@ const escapeForDoubleQuotedAttribute = string =>
     .replace(/"/g, "&quot;")
 
 const isAttributes = x =>
-  !(x instanceof MetaNode) &&
-  !(x instanceof MetaRawString) &&
+  !(x instanceof MetaNode || x instanceof MetaRawString) &&
   typeof x == "object"
 
 
@@ -151,7 +150,7 @@ export class MetaElement extends MetaNode {
       const contents =
         this.children
           .map(child =>
-            child instanceof MetaNode
+            (child instanceof MetaNode || x instanceof MetaRawString)
               ? child.toString()
               : escapeForElement(child + "")
           ).join("")
