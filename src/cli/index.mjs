@@ -2,15 +2,18 @@
 import { processImages } from "../media/images.mjs"
 import { join } from "path"
 
-import { Command } from "commander/esm.mjs"
-const program = new Command()
+import { cac } from "cac"
+const cli = cac("bruh", "Command-line interfaces for bruh")
 
-program
-  .command("process-images <directory>")
-  .description("Processes the images in the given directory for the optimized-picture component")
-  .action(directory => {
+cli
+  .command(
+    "process-images <directory>",
+    "Processes the images in the given directory for the optimized-picture component"
+  )
+  .action((directory, options) => {
     const imagesDirectory = join(process.cwd(), directory)
     processImages(imagesDirectory)
   })
 
-program.parse(process.argv)
+cli.help()
+cli.parse()

@@ -1,6 +1,28 @@
-<header align="center">
-  <h1>Bruh</h1>
-  <p>The thinnest possible layer between development and production for the modern web.</p>
+<header>
+  <h1 align="center">
+    <a href="https://technicalsource.dev/bruh">Bruh</a>
+  </h1>
+  <p align="center">The thinnest possible layer between development and production for the modern web.</p>
+  <p align="center">
+    <a href="https://github.com/Technical-Source/bruh/blob/main/LICENSE">
+      <img
+        alt="MIT License"
+        src="https://img.shields.io/badge/license-MIT-blue"
+      >
+    </a>
+    <a href="https://www.npmjs.com/package/bruh">
+      <img
+        alt="NPM Version"
+        src="https://img.shields.io/npm/v/bruh"
+      >
+    </a>
+    <a href="https://github.com/Technical-Source/bruh/discussions">
+      <img
+        alt="Github Discussions"
+        src="https://img.shields.io/badge/Discussion-Welcome-blue"
+      >
+    </a>
+  </p>
 </header>
 
 <hr>
