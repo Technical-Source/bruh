@@ -45,8 +45,16 @@ export const toAsyncIterable = callbackAcceptor => {
 }
 
 // Make an async iterable of DOM events
-export const listen = (target, event) =>
-  toAsyncIterable(resolve => target.addEventListener(event, resolve))
+export const listen = (target, event) => {
+  let stop
+  const stream = toAsyncIterable(resolve => {
+    target.addEventListener(event, resolve)
+    stop = () =>
+      target.removeEventListener(event, resolve)
+  })
+  stream.stop = stop
+  return stream
+}
 
 // Turn an async iterable into an array
 export const toArray = async iterable => {
