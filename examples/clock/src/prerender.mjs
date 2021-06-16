@@ -8,10 +8,10 @@ const document =
   html(
     head(
       title("My epic app"),
-      script({ type: "module", defer: "", src: "./index.mjs" })
+      script({ type: "module", src: "./index.mjs" })
     ),
     body(
-      app()
+      app
     )
   ).toString()
 
