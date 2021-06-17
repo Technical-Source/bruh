@@ -1,5 +1,5 @@
 // This takes a callback accepting function and returns an async iterable
-export const toAsyncIterable = callbackAcceptor => {
+export const fromCallbackAcceptor = callbackAcceptor => {
   // Keeps track of if this has stopped yet
   let resolveStopped
   const stopped = new Promise(resolve => {
@@ -78,11 +78,40 @@ export const toAsyncIterable = callbackAcceptor => {
 
 // Make an async iterable of DOM events
 export const listen = (target, event) =>
-  toAsyncIterable(resolve => {
+  fromCallbackAcceptor(resolve => {
     target.addEventListener(event, resolve)
 
     return () =>
       target.removeEventListener(event, resolve)
+  })
+
+// Integrate with the WHATWG Streams API
+export const fromReadableStream = readableStream => {
+  const reader = readableStream.getReader()
+
+  return {
+    [Symbol.asyncIterator]() {
+      return this
+    },
+
+    async next() {
+      return reader.read()
+    },
+
+    async stop() {
+      return reader.cancel()
+    }
+  }
+}
+
+export const toReadableStream = asyncIterator =>
+  new ReadableStream({
+    async pull(controller) {
+      for await (const x of asyncIterator)
+        controller.enqueue(x)
+
+      return controller.close()
+    }
   })
 
 // Turn an async iterable into an array
