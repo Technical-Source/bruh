@@ -1,5 +1,10 @@
 // This takes a callback accepting function and returns an async iterable
 export const toAsyncIterable = callbackAcceptor => {
+  // Keeps track of if this has stopped yet
+  let resolveStopped
+  const stopped = new Promise(resolve => {
+    resolveStopped = resolve
+  })
   // The value queue holds all values as they wait to be resolved on .next()
   const valueQueue = []
   // The resolver queue holds Promise resolve functions when .next() is called
@@ -26,7 +31,8 @@ export const toAsyncIterable = callbackAcceptor => {
     })
 
   // Hook in by setting the callback to pushValue()
-  callbackAcceptor(pushValue)
+  // Also, the callback acceptor might return a function to run to stop it
+  const onStop = callbackAcceptor(pushValue)
 
   // Return an object that is both an async iterable and an async iterator
   return {
@@ -37,24 +43,47 @@ export const toAsyncIterable = callbackAcceptor => {
     },
 
     // This property makes this an async iterator
-    next: async () => ({
-      done: false,
-      value: await pullValue()
-    })
+    async next() {
+      const resolveToValue = async () => {
+        const value = await pullValue()
+        return { value }
+      }
+
+      if (valueQueue.length)
+        return resolveToValue()
+
+      const resolveToDone = async () => {
+        await stopped
+        return { done: true }
+      }
+
+      return Promise.race([
+        resolveToValue(),
+        resolveToDone()
+      ])
+    },
+
+    // Expose the function to allow pushing values directly to the value queue
+    push: pushValue,
+
+    // Allow the async iterator to be stopped
+    stop() {
+      resolveStopped()
+
+      if (onStop)
+        return onStop()
+    }
   }
 }
 
 // Make an async iterable of DOM events
-export const listen = (target, event) => {
-  let stop
-  const stream = toAsyncIterable(resolve => {
+export const listen = (target, event) =>
+  toAsyncIterable(resolve => {
     target.addEventListener(event, resolve)
-    stop = () =>
+
+    return () =>
       target.removeEventListener(event, resolve)
   })
-  stream.stop = stop
-  return stream
-}
 
 // Turn an async iterable into an array
 export const toArray = async iterable => {
