@@ -1,0 +1,68 @@
+/* A little style reset */
+*, ::after, ::before {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+  color: inherit;
+  font-family: inherit;
+  overflow-wrap: break-word;
+}
+
+:root {
+  /* Stop mobile browser scroll */
+  overflow: hidden;
+  font-family: system-ui;
+  font-size: clamp(1em, 1em + 1vmin, 2em);
+}
+
+/* Our little app should be full-screen */
+main {
+  width: 100vw;
+  height: 100vh;
+
+  display: grid;
+  gap: 1em;
+  place-items: center;
+  padding: 1em;
+}
+
+div {
+  display: grid;
+  gap: 0.5em;
+  place-items: center;
+
+  /* PostCSS lets us do useful things like nest selectors */
+  & > h1 {
+    text-align: center;
+  }
+
+  & > a {
+    font-size: 2em;
+    line-height: 1.25;
+    min-height: 1.25em;
+    color: royalblue;
+  }
+
+  & > button {
+    font-size: 1em;
+    padding: 0.25em;
+    border-radius: 0.25em;
+    cursor: pointer;
+  }
+}
+
+svg {
+  max-height: 100%;
+  max-width: 100%;
+
+  & > #numbers {
+    font-size: 10px;
+    font-weight: bold;
+    user-select: none;
+  }
+
+  & > circle {
+    transform-origin: 50% 50%;
+  }
+}

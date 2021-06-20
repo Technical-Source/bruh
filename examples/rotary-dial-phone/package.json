@@ -7,17 +7,15 @@
     "url": "https://git.io/de"
   },
   "scripts": {
-    "build:html": "node ./src/prerender.mjs",
-    "build:js": "rollup --config",
-    "build": "npm run build:html && npm run build:js",
-    "serve": "python3 -m http.server --directory ./dist/ --"
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
   },
   "dependencies": {
-    "bruh": "file:../.."
+    "bruh": "file:../..",
+    "vite": "^2.3.8"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^11.2.0",
-    "rollup": "^2.41.2",
-    "rollup-plugin-terser": "^7.0.2"
+    "postcss-preset-env": "^6.7.0"
   }
 }

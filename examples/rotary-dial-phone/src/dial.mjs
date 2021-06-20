@@ -1,9 +1,5 @@
 import { circle } from "bruh/dom/svg"
-
-import { pipe } from "bruh/util"
-import {
-  listen, map, filter, forEach
-} from "bruh/util/iterable/async"
+import { dispatch } from "bruh/util"
 
 import {
   tau,
@@ -11,7 +7,6 @@ import {
   SVGCoordinatesToAngle
 } from "./math.mjs"
 import { endAngleToNumber } from "./numbers.mjs"
-import { dialNumber } from "./display.mjs"
 
 
 const dial =
@@ -24,6 +19,8 @@ const dial =
   })
   .toNode()
 
+// Translate events with coordinates relative to the document
+// into coordinates in our svg
 const eventToSVGCoordinates = event => {
   const rect = dial.getBoundingClientRect()
   return [
@@ -36,6 +33,7 @@ dial.style.setProperty("cursor", "grab")
 
 let endAngle = 0
 
+// Rotate the dial back to the starting position
 const goBack = () => {
   if (endAngle == 0)
     return
@@ -48,77 +46,79 @@ const goBack = () => {
   requestAnimationFrame(goBack)
 }
 
-dial.addEventListener("pointerdown", downEvent => {
+dial.addEventListener("pointerdown", async downEvent => {
   if (endAngle != 0)
     return
 
   dial.style.setProperty("cursor", "grabbing")
 
+  // We need to record the angle of the finger (cursor/any pointer device)
+  // when it first grabbed the dial
   const grabAngle = normalizeAngle(
     SVGCoordinatesToAngle(
       eventToSVGCoordinates(downEvent)
     )
   )
 
+  // Keeping track of the last angle and last (valid) angle
   let lastAngle, lastValidAngle = grabAngle
 
-  const moveEventStream = listen(document, "pointermove")
-
-  pipe(
-    moveEventStream,
-
-    filter(moveEvent =>
+  const onMove = moveEvent => [moveEvent]
+    // We only care about move events from the same pointer that grabbed the dial
+    .filter(moveEvent =>
       moveEvent.pointerId == downEvent.pointerId
-    ),
+    )
 
-    map(moveEvent =>
+    // Get the angle of pointer
+    .map(moveEvent =>
       SVGCoordinatesToAngle(
         eventToSVGCoordinates(moveEvent)
       )
-    ),
+    )
 
-    map(angle => normalizeAngle(angle, lastAngle)),
+    // We normalize the angle relative to the last recorded angle, so that angle math is easier
+    .map(angle => normalizeAngle(angle, lastAngle))
 
-    filter(angle => {
+    // We only want to accept movements clockwise up to the finger stopper
+    .filter(angle => {
       const validMovement =
         angle < lastAngle &&
         angle > 0 &&
         angle < lastValidAngle
       lastAngle = angle
       return validMovement
-    }),
+    })
 
-    forEach(angle => {
+    // If the movement was valid, we record that and rotate the dial
+    .forEach(angle => {
       lastValidAngle = angle
       endAngle = -(angle - grabAngle)
       dial.style.setProperty(
         "transform", `rotate(${endAngle}rad)`
       )
     })
-  )
 
   const onUp = upEvent => {
+    // Make sure we are talking about the same pointer that was grabbing the dial
     if (upEvent.pointerId != downEvent.pointerId)
       return
 
-    release()
-  }
-
-  const release = () => {
     dial.style.setProperty("cursor", "grab")
 
+    // We dial the number if the dial was moved far enough to bother
     if (endAngle > 0.05 * tau)
-      dialNumber(
-        endAngleToNumber(endAngle)
-      )
+      dispatch(dial, "dialed-number", {
+        detail: endAngleToNumber(endAngle)
+      })
 
     requestAnimationFrame(goBack)
 
-    moveEventStream.stop()
-    document.removeEventListener("pointerup", onUp)
+    // Close this move event listener
+    document.removeEventListener("pointermove", onMove)
   }
 
-  document.addEventListener("pointerup", onUp)
+  document.addEventListener("pointermove", onMove)
+  document.addEventListener("pointerup", onUp, { once: true })
 })
 
 export default dial
