@@ -26,8 +26,6 @@
     "./dom/html": "./src/dom/html.mjs",
     "./dom/svg": "./src/dom/svg.mjs",
     "./util": "./src/util/index.mjs",
-    "./util/iterable/async": "./src/util/iterable/async.mjs",
-    "./util/iterable/sync": "./src/util/iterable/sync.mjs",
     "./media/images": {
       "node": "./src/media/images.mjs"
     }
