@@ -44,7 +44,6 @@ const isAttributes = x =>
 export class MetaNode {
   constructor() {
     this.properties = {}
-    this.tag = undefined
   }
 
   toString() {}
@@ -56,24 +55,19 @@ export class MetaNode {
 
     return this
   }
-
-  setTag(tag = "") {
-    this.tag = tag
-
-    return this
-  }
 }
 
 export class MetaTextNode extends MetaNode {
   constructor(textContent) {
     super()
     this.textContent = textContent
+    this.tag = undefined
   }
 
   toString() {
-    return `<bruh-textnode style="all:unset;display:inline" ${
+    return `<bruh-textnode style="all:unset;display:inline"${
       this.tag
-        ? `data-bruh="${escapeForDoubleQuotedAttribute(this.tag)}"`
+        ? ` data-tag="${escapeForDoubleQuotedAttribute(this.tag)}"`
         : ""
     }>${ escapeForElement(this.textContent) }</bruh-textnode>`
   }
@@ -82,6 +76,12 @@ export class MetaTextNode extends MetaNode {
     const node = document.createTextNode(this.textContent)
     Object.assign(node, this.properties)
     return node
+  }
+
+  setTag(tag = "") {
+    this.tag = tag
+
+    return this
   }
 }
 
@@ -203,10 +203,20 @@ export class MetaRawString {
 export const t = textContent =>
   new MetaTextNode(textContent)
 
-export const textNodeFrom = element => {
-  const textNode = document.createTextNode(element.textContent)
-  element.replaceWith(textNode)
-  return textNode
+export const hydrateTextNodes = () => {
+  const tagged = {}
+  const bruhTextNodes = document.getElementsByTagName("bruh-textnode")
+
+  for (const bruhTextNode of bruhTextNodes) {
+    const textNode = document.createTextNode(bruhTextNode.textContent)
+
+    if (bruhTextNode.dataset.tag)
+      tagged[bruhTextNode.dataset.tag] = textNode
+
+    bruhTextNode.replaceWith(textNode)
+  }
+  
+  return tagged
 }
 
 export const e = (name, namespace) => (...variadic) => {

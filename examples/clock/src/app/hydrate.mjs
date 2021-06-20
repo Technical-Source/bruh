@@ -1,8 +1,6 @@
-import { textNodeFrom } from "bruh/dom/meta-node"
+import { hydrateTextNodes } from "bruh/dom/meta-node"
 
-const textNode = textNodeFrom(
-  document.querySelector(`[data-bruh="seconds"]`)
-)
+const { seconds: textNode } = hydrateTextNodes()
 
 let seconds = 0
 textNode.bruh = {
