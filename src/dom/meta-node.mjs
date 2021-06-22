@@ -125,6 +125,7 @@ export class MetaElement extends MetaNode {
     else {
       const contents =
         this.children
+          .flat(Infinity)
           .map(child =>
             (child instanceof MetaNode || child instanceof MetaRawString)
               ? child.toString()
@@ -144,6 +145,7 @@ export class MetaElement extends MetaNode {
 
     // Add children
     node.append(...this.children
+      .flat(Infinity)
       .map(child => {
         if (child instanceof MetaNode)
           return child.toNode()
@@ -200,8 +202,8 @@ export class MetaRawString {
 
 // Convenience functions
 
-export const t = textContent =>
-  new MetaTextNode(textContent)
+export const rawString = string =>
+  new MetaRawString(string)
 
 export const hydrateTextNodes = () => {
   const tagged = {}
@@ -219,7 +221,10 @@ export const hydrateTextNodes = () => {
   return tagged
 }
 
-export const e = (name, namespace) => (...variadic) => {
+const createMetaTextNode = textContent =>
+  new MetaTextNode(textContent)
+
+const createMetaElement = (name, namespace) => (...variadic) => {
   const meta = new MetaElement(name, namespace)
 
   // Implement optional attributes as first argument
@@ -233,5 +238,33 @@ export const e = (name, namespace) => (...variadic) => {
   return meta
 }
 
-export const rawString = string =>
-  new MetaRawString(string)
+// JSX integration
+const createMetaElementJSX = (nameOrComponent, attributesOrProps, ...children) => {
+  // If we are making a html element
+  // This is likely when the jsx tag name begins with a lowercase character
+  if (typeof nameOrComponent == "string") {
+    const meta = new MetaElement(nameOrComponent)
+
+    // These are attributes then, but they might be null/undefined
+    meta.attributes = attributesOrProps || {}
+    meta.children = children
+
+    return meta
+  }
+
+  // It must be a component, then
+  // Bruh components are just functions that return meta elements
+  // Due to JSX, this would mean a function with only one parameter - a "props" object
+  // This object includes the all of the attributes and a "children" key
+  return nameOrComponent( Object.assign({}, attributesOrProps, { children }) )
+}
+
+// These will be called with short names
+export {
+  createMetaTextNode   as t,
+  createMetaElement    as e,
+  createMetaElementJSX as h
+}
+
+// The JSX fragment is made into a bruh fragment (just an array)
+export const JSXFragment = ({ children }) => children

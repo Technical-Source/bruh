@@ -1,6 +1,6 @@
-import { div, h1, a, button } from "bruh/dom/html"
+import { button } from "bruh/dom/html"
 
-const telLink = a({ href: "tel:" }).toNode()
+const telLink = (<a href="tel:" />).toNode()
 
 document.addEventListener("dialed-number", dialEvent => {
   const number = dialEvent.detail
@@ -15,8 +15,8 @@ clearButton.addEventListener("click", () => {
 })
 
 export default
-  div(
-    h1("Go ahead and dial a phone number: "),
-    telLink,
-    clearButton
-  )
+  <div>
+    <h1>Go ahead and dial a phone number: </h1>
+    { telLink }
+    { clearButton }
+  </div>

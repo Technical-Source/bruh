@@ -3,8 +3,7 @@ import { svg, defs, path } from "bruh/dom/svg"
 
 import { numbers, holes } from "./numbers.mjs"
 import dial from "./dial.mjs"
-import display from "./display.mjs"
-
+import display from "./display.jsx"
 
 const app =
   main(
