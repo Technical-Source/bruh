@@ -1,2 +1,0 @@
-const{seconds:t}=(()=>{const t={},e=document.getElementsByTagName("bruh-textnode");for(const n of e){const e=document.createTextNode(n.textContent);n.dataset.tag&&(t[n.dataset.tag]=e),n.replaceWith(e)}return t})();let e=0;t.bruh={get seconds(){return e},set seconds(n){return t.textContent=e=n,e},interval:null,increment:()=>++t.bruh.seconds,decrement:()=>--t.bruh.seconds,startClock(){t.bruh.interval=setInterval(t.bruh.increment,1e3)},stopClock(){clearInterval(t.bruh.interval)}},t.bruh.startClock();
-//# sourceMappingURL=index.mjs.map
