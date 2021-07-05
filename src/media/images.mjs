@@ -1,29 +1,34 @@
 import sharp from "sharp"
-import { readdir, readFile, writeFile } from "fs/promises"
+import { readdir, writeFile } from "fs/promises"
 import { extname, join } from "path"
 
-const avif = async (filePath, file) =>
-  sharp(await file)
+const avif = async (filePath, sharpInstance) =>
+  sharpInstance
     .avif({  })
     .toFile(`${filePath}.avif`)
 
-const webp = async (filePath, file) =>
-  sharp(await file)
+const webp = async (filePath, sharpInstance) =>
+  sharpInstance
     .webp({  })
     .toFile(`${filePath}.webp`)
 
 // Low Quality Image Placeholder inline css for the <img> style attribute
-const json = async (filePath, file) => {
-  const info = {}
+const json = async (filePath, sharpInstance) => {
+  const imageManifest = {}
 
-  const buffer = await sharp(await file)
+  const metadata = await sharpInstance.metadata()
+  imageManifest.format = metadata.format
+  imageManifest.width  = metadata.width
+  imageManifest.height = metadata.height
+
+  const buffer = await sharpInstance
     .resize({ fit: "inside", width: 16, height: 16 })
     .blur()
     .webp({ reductionEffort: 6 })
     .toBuffer()
 
-  info.lqip = `data:image/webp;base64,${buffer.toString("base64")}`
-  return writeFile(`${filePath}.json`, JSON.stringify(info))
+  imageManifest.lqip = `data:image/webp;base64,${buffer.toString("base64")}`
+  return writeFile(`${filePath}.json`, JSON.stringify(imageManifest))
 }
 
 const getUnprocessedImages = async directory => {
@@ -56,12 +61,10 @@ const getUnprocessedImages = async directory => {
 
 export const processImages = async directory => {
   const unprocessedImages = await getUnprocessedImages(directory)
-  const processes = unprocessedImages
-    .map(filePath => ({ filePath, file: readFile(filePath) }))
-    .flatMap(({ filePath, file }) =>
+  for (const filePath of unprocessedImages) {
+    await Promise.all(
       [avif, webp, json]
-        .map(process => process(filePath, file))
+        .map(process => process(filePath, sharp(filePath)))
     )
-    
-  return Promise.allSettled(processes)
+  }
 }

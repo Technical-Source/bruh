@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.4.0",
+  "version": "1.5.0",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -20,12 +20,13 @@
   "repository": "https://github.com/Technical-Source/bruh.git",
   "bugs": "https://github.com/Technical-Source/bruh/issues",
   "exports": {
-    "./": "./src/dom/html.mjs",
+    ".": "./src/dom/html.mjs",
     "./dom": "./src/dom/html.mjs",
     "./dom/meta-node": "./src/dom/meta-node.mjs",
     "./dom/html": "./src/dom/html.mjs",
     "./dom/svg": "./src/dom/svg.mjs",
     "./util": "./src/util/index.mjs",
+    "./components/*": "./src/components/*.mjs",
     "./media/images": {
       "node": "./src/media/images.mjs"
     }
