@@ -1,26 +1,28 @@
 // https://html.spec.whatwg.org/multipage/syntax.html#void-elements
+const voidElements = [
+  "base",
+  "link",
+  "meta",
+
+  "hr",
+  "br",
+  "wbr",
+
+  "area",
+  "img",
+  "track",
+
+  "embed",
+  "param",
+  "source",
+
+  "col",
+
+  "input"
+]
+
 const isVoidElement = element =>
-  [
-    "base",
-    "link",
-    "meta",
-
-    "hr",
-    "br",
-    "wbr",
-
-    "area",
-    "img",
-    "track",
-
-    "embed",
-    "param",
-    "source",
-
-    "col",
-
-    "input"
-  ].includes(element)
+  voidElements.includes(element)
 
 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
 // https://html.spec.whatwg.org/multipage/syntax.html#cdata-rcdata-restrictions
@@ -35,32 +37,33 @@ const escapeForDoubleQuotedAttribute = x =>
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
 
-const isAttributes = x =>
-  !(x instanceof MetaNode || x instanceof MetaRawString) &&
-  typeof x == "object"
+// A basic check for if a value is allowed as a meta node's child
+// It's responsible for quickly checking the type, not deep validation
+const isMetaNodeChild = x =>
+  x.isBruhMetaNode ||
+  x.isBruhMetaRawString ||
+  x.isBruhReactive ||
+  Array.isArray(x) ||
+  (globalThis.Node && x instanceof Node) ||
+  (typeof x !== "object" && typeof x !== "function")
+
+const flattenReactive = x =>
+  x.isBruhReactive
+    ? x.value
+    : x
+
+
 
 // Meta Nodes
 
-export class MetaNode {
-  constructor() {
-    this.properties = {}
-  }
-
-  toString() {}
-
-  toNode() {}
-
-  addProperties(properties = {}) {
-    Object.assign(this.properties, properties)
-
-    return this
-  }
-}
-
-export class MetaTextNode extends MetaNode {
+export class MetaTextNode {
   constructor(textContent) {
-    super()
+    this.isBruhMetaNode =
+    this.isBruhMetaTextNode = true
+
     this.textContent = textContent
+
+    this.properties = {}
     this.tag = undefined
   }
 
@@ -69,13 +72,25 @@ export class MetaTextNode extends MetaNode {
       this.tag
         ? ` data-tag="${escapeForDoubleQuotedAttribute(this.tag)}"`
         : ""
-    }>${ escapeForElement(this.textContent) }</bruh-textnode>`
+    }>${ escapeForElement(flattenReactive(this.textContent)) }</bruh-textnode>`
   }
 
   toNode() {
-    const node = document.createTextNode(this.textContent)
+    const node = document.createTextNode(flattenReactive(this.textContent))
+
+    if (this.textContent.isBruhReactive)
+      this.textContent.react(() => {
+        node.textContent = this.textContent.value
+      })
+
     Object.assign(node, this.properties)
     return node
+  }
+
+  addProperties(properties = {}) {
+    Object.assign(this.properties, properties)
+
+    return this
   }
 
   setTag(tag = "") {
@@ -85,35 +100,34 @@ export class MetaTextNode extends MetaNode {
   }
 }
 
-export class MetaElement extends MetaNode {
+export class MetaElement {
   constructor(name, namespace) {
-    super()
+    this.isBruhMetaNode =
+    this.isBruhMetaElement = true
+
     this.name = name
     this.namespace = namespace
     this.children = []
 
+    this.properties = {}
     this.attributes = {}
     this.dataset = {}
   }
 
   toString() {
-    const datasetWithTag =
-      this.tag
-        ? Object.assign({}, this.dataset, { bruh: this.tag })
-        : this.dataset
     // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
     const attributes =
       [
         ...Object.entries(this.attributes),
-        ...Object.entries(datasetWithTag)
+        ...Object.entries(this.dataset)
           .map(([name, value]) => {
             // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem
             const skewered = name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)
-            return [`data-${skewered}`, value]
+            return [`data-${skewered}`, flattenReactive(value)]
           })
       ]
         .map(([name, value]) =>
-          value == ""
+          value === ""
             ? ` ${name}`
             : ` ${name}="${escapeForDoubleQuotedAttribute(value)}"`
         ).join("")
@@ -122,19 +136,19 @@ export class MetaElement extends MetaNode {
 
     if (isVoidElement(this.name))
       return startTag
-    else {
-      const contents =
-        this.children
-          .flat(Infinity)
-          .map(child =>
-            (child instanceof MetaNode || child instanceof MetaRawString)
-              ? child.toString()
-              : escapeForElement(child)
-          ).join("")
-      // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
-      const endTag = `</${this.name}>`
-      return startTag + contents + endTag
-    }
+
+    const contents =
+      this.children
+        .flat(Infinity)
+        .map(child => {
+          const c = flattenReactive(child)
+          return (c.isBruhMetaNode || c.isBruhMetaRawString)
+            ? c.toString()
+            : escapeForElement(c)
+        }).join("")
+    // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
+    const endTag = `</${this.name}>`
+    return startTag + contents + endTag
   }
 
   toNode() {
@@ -143,26 +157,46 @@ export class MetaElement extends MetaNode {
         ? document.createElementNS(this.namespace, this.name)
         : document.createElement  (                this.name)
 
+    const nonReactiveToNode = child => {
+      if (child.isBruhMetaNode)
+        return child.toNode()
+
+      if (child instanceof Node)
+        return child
+
+      if (!child.isBruhReactive)
+        return document.createTextNode(child)
+    }
+
     // Add children
     node.append(...this.children
       .flat(Infinity)
       .map(child => {
-        if (child instanceof MetaNode)
-          return child.toNode()
+        if (child.isBruhReactive) {
+          const node = nonReactiveToNode(child.value)
+          child.react(() => {
+            node.replaceWith(nonReactiveToNode(child.value))
+          })
+          return node
+        }
 
-        if (child instanceof Node)
-          return child
-
-        return child + "" // Coerce to a string to become a bare text node
+        return nonReactiveToNode(child)
       })
     )
     // Assign properties, attributes, and dataset
     Object.assign(node, this.properties)
-    Object.entries(this.attributes)
-      .forEach(([name, value]) => node.setAttribute(name, value))
-    Object.assign(node.dataset, this.dataset)
+    for (const name in this.attributes)
+      node.setAttribute(name, flattenReactive(this.attributes[name]))
+    for (const name in this.dataset)
+      node.dataset[name] = flattenReactive(this.dataset[name])
 
     return node
+  }
+
+  addProperties(properties = {}) {
+    Object.assign(this.properties, properties)
+
+    return this
   }
 
   addAttributes(attributes = {}) {
@@ -192,6 +226,7 @@ export class MetaElement extends MetaNode {
 
 export class MetaRawString {
   constructor(string) {
+    this.isBruhMetaRawString = true
     this.string = string
   }
 
@@ -199,6 +234,8 @@ export class MetaRawString {
     return this.string
   }
 }
+
+
 
 // Convenience functions
 
@@ -217,7 +254,7 @@ export const hydrateTextNodes = () => {
 
     bruhTextNode.replaceWith(textNode)
   }
-  
+
   return tagged
 }
 
@@ -228,7 +265,7 @@ const createMetaElement = (name, namespace) => (...variadic) => {
   const meta = new MetaElement(name, namespace)
 
   // Implement optional attributes as first argument
-  if (isAttributes(variadic[0]))
+  if (!isMetaNodeChild(variadic[0]))
     [meta.attributes, ...meta.children] = variadic
   else {
     meta.attributes = {}

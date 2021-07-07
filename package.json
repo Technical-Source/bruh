@@ -25,6 +25,7 @@
     "./dom/meta-node": "./src/dom/meta-node.mjs",
     "./dom/html": "./src/dom/html.mjs",
     "./dom/svg": "./src/dom/svg.mjs",
+    "./reactive": "./src/reactive/index.mjs",
     "./util": "./src/util/index.mjs",
     "./components/*": "./src/components/*.mjs",
     "./media/images": {

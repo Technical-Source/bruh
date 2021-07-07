@@ -14,3 +14,19 @@ export const dispatch = (target, type, options) =>
       ...options
     })
   )
+
+// Inspired by https://antfu.me/posts/destructuring-with-object-or-array#take-away
+// Creates an object that is both destructable with {...} and [...]
+// Useful for writing library functions à la react-use & vueuse
+export const createDestructable = (object, iterable) => {
+  const destructable = {
+    ...object,
+    [Symbol.iterator]: () => iterable[Symbol.iterator]()
+  }
+
+  Object.defineProperty(destructable, Symbol.iterator, {
+    enumerable: false
+  })
+
+  return destructable
+}
