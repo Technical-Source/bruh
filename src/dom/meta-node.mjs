@@ -52,6 +52,15 @@ const flattenReactive = x =>
     ? x.value
     : x
 
+const reactiveDo = (x, f) => {
+  if (!x.isBruhReactive)
+    return f(x)
+
+  const result = f(x.value)
+  x.react(() => f(x.value))
+  return result
+}
+
 
 
 // Meta Nodes
@@ -157,38 +166,43 @@ export class MetaElement {
         ? document.createElementNS(this.namespace, this.name)
         : document.createElement  (                this.name)
 
-    const nonReactiveToNode = child => {
+    const nonReactiveToNode = (child, implicitTextNodes = true) => {
       if (child.isBruhMetaNode)
         return child.toNode()
 
       if (child instanceof Node)
         return child
 
-      if (!child.isBruhReactive)
-        return document.createTextNode(child)
+      return implicitTextNodes
+        ? child
+        : document.createTextNode(child)
     }
 
     // Add children
     node.append(...this.children
       .flat(Infinity)
       .map(child => {
-        if (child.isBruhReactive) {
-          const node = nonReactiveToNode(child.value)
-          child.react(() => {
-            node.replaceWith(nonReactiveToNode(child.value))
-          })
-          return node
-        }
+        if (!child.isBruhReactive)
+          return nonReactiveToNode(child)
 
-        return nonReactiveToNode(child)
+        let node = nonReactiveToNode(child.value, false)
+        child.react(() => {
+          const oldNode = node
+          node = nonReactiveToNode(child.value, false)
+          oldNode.replaceWith(node)
+        })
       })
     )
     // Assign properties, attributes, and dataset
     Object.assign(node, this.properties)
     for (const name in this.attributes)
-      node.setAttribute(name, flattenReactive(this.attributes[name]))
+      reactiveDo(this.attributes[name], value => {
+        node.setAttribute(name, value)
+      })
     for (const name in this.dataset)
-      node.dataset[name] = flattenReactive(this.dataset[name])
+      reactiveDo(this.dataset[name], value => {
+        node.dataset[name] = value
+      })
 
     return node
   }
