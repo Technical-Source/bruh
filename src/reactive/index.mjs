@@ -48,3 +48,17 @@ export const r = (x, f) => {
 
   return new Reactive(x)
 }
+
+export const reactiveDo = (x, f) => {
+  if (!x.isBruhReactive)
+    return f(x)
+
+  const result = f(x.value)
+  x.react(() => f(x.value))
+  return result
+}
+
+export const flattenReactive = x =>
+  x.isBruhReactive
+    ? x.value
+    : x

@@ -1,3 +1,5 @@
+import { reactiveDo } from "bruh/reactive"
+
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation
 const isMetaNodeChild = x =>
@@ -6,15 +8,6 @@ const isMetaNodeChild = x =>
   x instanceof Node ||
   Array.isArray(x) ||
   (typeof x !== "object" && typeof x !== "function")
-
-const reactiveDo = (x, f) => {
-  if (!x.isBruhReactive)
-    return f(x)
-
-  const result = f(x.value)
-  x.react(() => f(x.value))
-  return result
-}
 
 const nonReactiveToNode = (child, implicitTextNodes = false) => {
   if (child.isBruhMetaNode)

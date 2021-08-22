@@ -2,6 +2,12 @@
 export const pipe = (x, ...fs) =>
   fs.reduce((y, f) => f(y), x)
 
+// Super simple, small, performant, and safe id source
+// It just returns base36 (0-9 then a-z) natural numbers, incrementing on each call
+let n = 0
+export const id = () =>
+  (n++).toString(36)
+
 // Dispatch a custom event to (capturing) and from (bubbling) a target (usually a DOM node)
 // Returns false if the event was cancelled (preventDefault()) and true otherwise
 export const dispatch = (target, type, options) =>

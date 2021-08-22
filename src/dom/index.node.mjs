@@ -1,3 +1,5 @@
+import { flattenReactive } from "bruh/reactive"
+
 // https://html.spec.whatwg.org/multipage/syntax.html#void-elements
 const voidElements = [
   "base",
@@ -45,11 +47,6 @@ const isMetaNodeChild = x =>
   x.isBruhReactive ||
   Array.isArray(x) ||
   (typeof x !== "object" && typeof x !== "function")
-
-const flattenReactive = x =>
-  x.isBruhReactive
-    ? x.value
-    : x
 
 
 
