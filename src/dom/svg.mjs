@@ -1,4 +1,4 @@
-import { e } from "./meta-node.mjs"
+import { e } from "bruh/dom"
 
 /*
 Notes:

@@ -19,10 +19,12 @@
   "homepage": "https://technicalsource.dev/bruh",
   "repository": "https://github.com/Technical-Source/bruh.git",
   "bugs": "https://github.com/Technical-Source/bruh/issues",
+  "type": "module",
   "exports": {
-    ".": "./src/dom/html.mjs",
-    "./dom": "./src/dom/html.mjs",
-    "./dom/meta-node": "./src/dom/meta-node.mjs",
+    "./dom": {
+      "browser": "./src/dom/index.browser.mjs",
+      "node": "./src/dom/index.node.mjs"
+    },
     "./dom/html": "./src/dom/html.mjs",
     "./dom/svg": "./src/dom/svg.mjs",
     "./reactive": "./src/reactive/index.mjs",

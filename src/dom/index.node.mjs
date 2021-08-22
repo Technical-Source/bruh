@@ -44,22 +44,12 @@ const isMetaNodeChild = x =>
   x.isBruhMetaRawString ||
   x.isBruhReactive ||
   Array.isArray(x) ||
-  (globalThis.Node && x instanceof Node) ||
   (typeof x !== "object" && typeof x !== "function")
 
 const flattenReactive = x =>
   x.isBruhReactive
     ? x.value
     : x
-
-const reactiveDo = (x, f) => {
-  if (!x.isBruhReactive)
-    return f(x)
-
-  const result = f(x.value)
-  x.react(() => f(x.value))
-  return result
-}
 
 
 
@@ -71,8 +61,6 @@ export class MetaTextNode {
     this.isBruhMetaTextNode = true
 
     this.textContent = textContent
-
-    this.properties = {}
     this.tag = undefined
   }
 
@@ -84,24 +72,6 @@ export class MetaTextNode {
     }>${ escapeForElement(flattenReactive(this.textContent)) }</bruh-textnode>`
   }
 
-  toNode() {
-    const node = document.createTextNode(flattenReactive(this.textContent))
-
-    if (this.textContent.isBruhReactive)
-      this.textContent.react(() => {
-        node.textContent = this.textContent.value
-      })
-
-    Object.assign(node, this.properties)
-    return node
-  }
-
-  addProperties(properties = {}) {
-    Object.assign(this.properties, properties)
-
-    return this
-  }
-
   setTag(tag = "") {
     this.tag = tag
 
@@ -110,15 +80,13 @@ export class MetaTextNode {
 }
 
 export class MetaElement {
-  constructor(name, namespace) {
+  constructor(name) {
     this.isBruhMetaNode =
     this.isBruhMetaElement = true
 
     this.name = name
-    this.namespace = namespace
     this.children = []
 
-    this.properties = {}
     this.attributes = {}
     this.dataset = {}
   }
@@ -160,59 +128,6 @@ export class MetaElement {
     return startTag + contents + endTag
   }
 
-  toNode() {
-    const node =
-      this.namespace
-        ? document.createElementNS(this.namespace, this.name)
-        : document.createElement  (                this.name)
-
-    const nonReactiveToNode = (child, implicitTextNodes = true) => {
-      if (child.isBruhMetaNode)
-        return child.toNode()
-
-      if (child instanceof Node)
-        return child
-
-      return implicitTextNodes
-        ? child
-        : document.createTextNode(child)
-    }
-
-    // Add children
-    node.append(...this.children
-      .flat(Infinity)
-      .map(child => {
-        if (!child.isBruhReactive)
-          return nonReactiveToNode(child)
-
-        let node = nonReactiveToNode(child.value, false)
-        child.react(() => {
-          const oldNode = node
-          node = nonReactiveToNode(child.value, false)
-          oldNode.replaceWith(node)
-        })
-      })
-    )
-    // Assign properties, attributes, and dataset
-    Object.assign(node, this.properties)
-    for (const name in this.attributes)
-      reactiveDo(this.attributes[name], value => {
-        node.setAttribute(name, value)
-      })
-    for (const name in this.dataset)
-      reactiveDo(this.dataset[name], value => {
-        node.dataset[name] = value
-      })
-
-    return node
-  }
-
-  addProperties(properties = {}) {
-    Object.assign(this.properties, properties)
-
-    return this
-  }
-
   addAttributes(attributes = {}) {
     Object.assign(this.attributes, attributes)
 
@@ -221,18 +136,6 @@ export class MetaElement {
 
   addDataAttributes(dataAttributes = {}) {
     Object.assign(this.dataset, dataAttributes)
-
-    return this
-  }
-
-  prepend(...xs) {
-    this.children.unshift(...xs)
-
-    return this
-  }
-
-  append(...xs) {
-    this.children.push(...xs)
 
     return this
   }
@@ -256,27 +159,11 @@ export class MetaRawString {
 export const rawString = string =>
   new MetaRawString(string)
 
-export const hydrateTextNodes = () => {
-  const tagged = {}
-  const bruhTextNodes = document.getElementsByTagName("bruh-textnode")
-
-  for (const bruhTextNode of bruhTextNodes) {
-    const textNode = document.createTextNode(bruhTextNode.textContent)
-
-    if (bruhTextNode.dataset.tag)
-      tagged[bruhTextNode.dataset.tag] = textNode
-
-    bruhTextNode.replaceWith(textNode)
-  }
-
-  return tagged
-}
-
 const createMetaTextNode = textContent =>
   new MetaTextNode(textContent)
 
-const createMetaElement = (name, namespace) => (...variadic) => {
-  const meta = new MetaElement(name, namespace)
+const createMetaElement = name => (...variadic) => {
+  const meta = new MetaElement(name)
 
   // Implement optional attributes as first argument
   if (!isMetaNodeChild(variadic[0]))
