@@ -57,8 +57,3 @@ export const reactiveDo = (x, f) => {
   x.react(() => f(x.value))
   return result
 }
-
-export const flattenReactive = x =>
-  x.isBruhReactive
-    ? x.value
-    : x

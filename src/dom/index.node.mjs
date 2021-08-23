@@ -1,5 +1,3 @@
-import { flattenReactive } from "bruh/reactive"
-
 // https://html.spec.whatwg.org/multipage/syntax.html#void-elements
 const voidElements = [
   "base",
@@ -44,7 +42,6 @@ const escapeForDoubleQuotedAttribute = x =>
 const isMetaNodeChild = x =>
   x.isBruhMetaNode ||
   x.isBruhMetaRawString ||
-  x.isBruhReactive ||
   Array.isArray(x) ||
   (typeof x !== "object" && typeof x !== "function")
 
@@ -66,7 +63,7 @@ export class MetaTextNode {
       this.tag
         ? ` data-tag="${escapeForDoubleQuotedAttribute(this.tag)}"`
         : ""
-    }>${ escapeForElement(flattenReactive(this.textContent)) }</bruh-textnode>`
+    }>${ escapeForElement(this.textContent) }</bruh-textnode>`
   }
 
   setTag(tag = "") {
@@ -97,7 +94,7 @@ export class MetaElement {
           .map(([name, value]) => {
             // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem
             const skewered = name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)
-            return [`data-${skewered}`, flattenReactive(value)]
+            return [`data-${skewered}`, value]
           })
       ]
         .map(([name, value]) =>
@@ -115,10 +112,9 @@ export class MetaElement {
       this.children
         .flat(Infinity)
         .map(child => {
-          const c = flattenReactive(child)
-          return (c.isBruhMetaNode || c.isBruhMetaRawString)
-            ? c.toString()
-            : escapeForElement(c)
+          return (child.isBruhMetaNode || child.isBruhMetaRawString)
+            ? child.toString()
+            : escapeForElement(child)
         }).join("")
     // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
     const endTag = `</${this.name}>`
