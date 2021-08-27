@@ -27,6 +27,9 @@
     },
     "./dom/html": "./src/dom/html.mjs",
     "./dom/svg": "./src/dom/svg.mjs",
+    "./dom/live-fragment": {
+      "browser": "./src/dom/live-fragment.mjs"
+    },
     "./reactive": "./src/reactive/index.mjs",
     "./util": "./src/util/index.mjs",
     "./components/*": "./src/components/*.mjs",

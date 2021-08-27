@@ -1,3 +1,4 @@
+import { LiveFragment } from "bruh/live-fragment"
 import { reactiveDo } from "bruh/reactive"
 import { maybeDo } from "bruh/util"
 
@@ -10,34 +11,39 @@ const isMetaNodeChild = x =>
   Array.isArray(x) ||
   (typeof x !== "object" && typeof x !== "function")
 
-const nonReactiveToNode = (child, implicitTextNodes = false) => {
-  if (child.isBruhMetaNode)
-    return child.toNode()
+const toNode = x => {
+  if (x.isBruhMetaNode)
+    return x.node
 
-  if (child instanceof Node)
-    return child
+  if (x instanceof Node)
+    return x
 
-  return implicitTextNodes
-    ? child
-    : document.createTextNode(child)
+  return document.createTextNode(x)
 }
 
-const childrenToNodes = children => {
-  return children
+const childrenToNodes = children =>
+  children
     .flat(Infinity)
-    .map(child => {
+    .flatMap(child => {
       if (!child.isBruhReactive)
-        return nonReactiveToNode(child, true)
+        return [toNode(child)]
 
-      let node = nonReactiveToNode(child.value)
+      if (Array.isArray(child.value)) {
+        const liveFragment = new LiveFragment()
+        child.react(() => {
+          liveFragment.replaceChildren(...childrenToNodes(child.value))
+        })
+        return [liveFragment.startMarker, ...childrenToNodes(child.value), liveFragment.endMarker]
+      }
+
+      let node = toNode(child.value)
       child.react(() => {
         const oldNode = node
-        node = nonReactiveToNode(child.value)
+        node = toNode(child.value)
         oldNode.replaceWith(node)
       })
-      return node
+      return [node]
     })
-}
 
 
 
