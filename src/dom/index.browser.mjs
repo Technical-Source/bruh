@@ -21,7 +21,7 @@ const toNode = x => {
   return document.createTextNode(x)
 }
 
-const childrenToNodes = children =>
+export const childrenToNodes = children =>
   children
     .flat(Infinity)
     .flatMap(child => {
@@ -83,6 +83,12 @@ export class MetaElement {
         : document.createElement  (           name)
   }
 
+  static from(element) {
+    const result = new this("div")
+    result.node = element
+    return result
+  }
+
   addProperties(properties = {}) {
     Object.assign(this.node, properties)
 
@@ -115,26 +121,26 @@ export class MetaElement {
 
   before(...xs) {
     this.node.before(...childrenToNodes(xs))
-
-    return this
   }
 
   prepend(...xs) {
     this.node.prepend(...childrenToNodes(xs))
-
-    return this
   }
 
   append(...xs) {
     this.node.append(...childrenToNodes(xs))
-
-    return this
   }
 
   after(...xs) {
     this.node.after(...childrenToNodes(xs))
+  }
 
-    return this
+  replaceChildren(...xs) {
+    this.node.replaceChildren(...childrenToNodes(xs))
+  }
+
+  replaceWith(...xs) {
+    this.node.replaceWith(...childrenToNodes(xs))
   }
 }
 

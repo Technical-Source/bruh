@@ -14,6 +14,13 @@ export class LiveFragment {
     this.endMarker   = document.createTextNode("")
   }
 
+  static from(firstNode, lastNode) {
+    const liveFragment = new this()
+    firstNode.before(liveFragment.startMarker)
+    lastNode.after(liveFragment.endMarker)
+    return liveFragment
+  }
+
   before(...xs) {
     this.startMarker.before(...xs)
   }
@@ -30,13 +37,6 @@ export class LiveFragment {
     this.endMarker.after(...xs)
   }
 
-  removeChildren() {
-    const range = document.createRange()
-    range.setStartAfter(this.startMarker)
-    range.setEndBefore(this.endMarker)
-    range.deleteContents()
-  }
-
   remove() {
     const range = document.createRange()
     range.setStartBefore(this.startMarker)
@@ -45,7 +45,10 @@ export class LiveFragment {
   }
 
   replaceChildren(...xs) {
-    this.removeChildren()
+    const range = document.createRange()
+    range.setStartAfter(this.startMarker)
+    range.setEndBefore(this.endMarker)
+    range.deleteContents()
     this.startMarker.after(...xs)
   }
 
