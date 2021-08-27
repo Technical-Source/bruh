@@ -2,12 +2,6 @@
 export const pipe = (x, ...fs) =>
   fs.reduce((y, f) => f(y), x)
 
-// Super simple, small, performant, and safe id source
-// It just returns base36 (0-9 then a-z) natural numbers, incrementing on each call
-let n = 0
-export const id = () =>
-  (n++).toString(36)
-
 // Dispatch a custom event to (capturing) and from (bubbling) a target (usually a DOM node)
 // Returns false if the event was cancelled (preventDefault()) and true otherwise
 export const dispatch = (target, type, options) =>
@@ -35,4 +29,18 @@ export const createDestructable = (object, iterable) => {
   })
 
   return destructable
+}
+
+// A function that acts like Maybe.from(x).ifExists(existsThen).ifEmpty(emptyThen)
+// Except we just use an array in place of a true Maybe type
+// This is useful for setting and removing reactive attributes
+export const maybeDo = (existsThen, emptyThen) => x => {
+  if (Array.isArray(x)) {
+    if (x.length)
+      existsThen(x[0])
+    else
+      emptyThen()
+  }
+  else
+    existsThen(x)
 }

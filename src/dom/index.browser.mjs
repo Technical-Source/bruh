@@ -1,4 +1,5 @@
 import { reactiveDo } from "bruh/reactive"
+import { maybeDo } from "bruh/util"
 
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation
@@ -84,18 +85,24 @@ export class MetaElement {
 
   addAttributes(attributes = {}) {
     for (const name in attributes)
-      reactiveDo(attributes[name], value => {
-        this.node.setAttribute(name, value)
-      })
+      reactiveDo(attributes[name],
+        maybeDo(
+          value => this.node.setAttribute   (name, value),
+          ()    => this.node.removeAttribute(name)
+        )
+      )
 
     return this
   }
 
   addDataAttributes(dataAttributes = {}) {
     for (const name in dataAttributes)
-      reactiveDo(dataAttributes[name], value => {
-        this.node.dataset[name] = value
-      })
+      reactiveDo(dataAttributes[name],
+        maybeDo(
+          value =>        this.node.dataset[name] = value,
+          ()    => delete this.node.dataset[name]
+        )
+      )
 
     return this
   }
