@@ -22,13 +22,19 @@
   "type": "module",
   "exports": {
     "./dom": {
-      "browser": "./src/dom/index.browser.mjs",
-      "node": "./src/dom/index.node.mjs"
+      "node": "./src/dom/node/index.mjs",
+      "browser": "./src/dom/browser/index.mjs"
     },
-    "./dom/html": "./src/dom/html.mjs",
-    "./dom/svg": "./src/dom/svg.mjs",
+    "./dom/html": {
+      "node": "./src/dom/node/html.mjs",
+      "browser": "./src/dom/browser/html.mjs"
+    },
+    "./dom/svg": {
+      "node": "./src/dom/node/svg.mjs",
+      "browser": "./src/dom/browser/svg.mjs"
+    },
     "./dom/live-fragment": {
-      "browser": "./src/dom/live-fragment.mjs"
+      "browser": "./src/dom/browser/live-fragment.mjs"
     },
     "./reactive": "./src/reactive/index.mjs",
     "./util": "./src/util/index.mjs",

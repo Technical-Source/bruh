@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { processImages } from "bruh/media/images"
+import { processImages } from "../media/images.mjs"
 import { join } from "path"
 
 import { cac } from "cac"

@@ -1,6 +1,6 @@
-import { LiveFragment } from "bruh/live-fragment"
-import { reactiveDo } from "bruh/reactive"
-import { maybeDo } from "bruh/util"
+import { LiveFragment } from "./live-fragment.mjs"
+import { reactiveDo } from "../../reactive/index.mjs"
+import { maybeDo } from "../../util/index.mjs"
 
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation

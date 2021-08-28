@@ -1,4 +1,4 @@
-import { e } from "bruh/dom"
+import { e } from "./index.mjs"
 
 /*
 Notes:
