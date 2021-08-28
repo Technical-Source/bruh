@@ -3,7 +3,7 @@ import path from "path"
 import vite from "vite"
 import { compile } from "xdm"
 
-const mdx = ({ rehypePlugins = [] } = {}) => {
+const mdx = ({ rehypePlugins } = {}) => {
   return {
     name: "bruh-mdx",
     enforce: "pre",
@@ -209,10 +209,13 @@ export const bruhJSX = () => {
 export const bruh = ({
   htmlRenderFileExtention = /\.html\.(mjs|jsx?|tsx?)$/,
   root,
-  external = []
+  external = [],
+  rehypePlugins = []
 } = {}) =>
   [
-    mdx(),
+    mdx({
+      rehypePlugins
+    }),
     bruhDev({
       htmlRenderFileExtention,
       root,
