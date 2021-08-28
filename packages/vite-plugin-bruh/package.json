@@ -1,13 +1,17 @@
 {
   "name": "vite-plugin-bruh",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A vite plugin to integrate with bruh",
   "type": "module",
   "main": "./index.mjs",
   "scripts": {},
-  "homepage": "https://github.com/Technical-Source/vite-plugin-bruh",
-  "repository": "https://github.com/Technical-Source/vite-plugin-bruh.git",
-  "bugs": "https://github.com/Technical-Source/vite-plugin-bruh/issues",
+  "homepage": "https://github.com/Technical-Source/bruh/tree/main/packages/vite-plugin-bruh#readme",
+  "bugs": "https://github.com/Technical-Source/bruh/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Technical-Source/bruh.git",
+    "directory": "packages/vite-plugin-bruh"
+  },
   "keywords": [
     "vite-plugin",
     "bruh",

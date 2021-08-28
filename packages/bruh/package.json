@@ -10,15 +10,19 @@
     "library",
     "modern"
   ],
-  "version": "1.6.0",
+  "version": "1.6.1",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
     "url": "https://git.io/de"
   },
   "homepage": "https://technicalsource.dev/bruh",
-  "repository": "https://github.com/Technical-Source/bruh.git",
   "bugs": "https://github.com/Technical-Source/bruh/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Technical-Source/bruh.git",
+    "directory": "packages/bruh"
+  },
   "type": "module",
   "exports": {
     "./dom": {

@@ -1,6 +1,6 @@
 {
   "name": "create-bruh",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Quickly start working with bruh",
   "main": "./index.mjs",
   "bin": {
@@ -11,9 +11,13 @@
     "prompts": "^2.4.1"
   },
   "scripts": {},
-  "homepage": "https://github.com/Technical-Source/create-bruh",
-  "repository": "https://github.com/Technical-Source/create-bruh.git",
-  "bugs": "https://github.com/Technical-Source/create-bruh/issues",
+  "homepage": "https://github.com/Technical-Source/bruh/tree/main/packages/create-bruh#readme",
+  "bugs": "https://github.com/Technical-Source/bruh/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Technical-Source/bruh.git",
+    "directory": "packages/create-bruh"
+  },
   "keywords": [
     "init",
     "create",
