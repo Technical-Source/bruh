@@ -1,62 +1,7 @@
 {
-  "name": "bruh",
-  "description": "The thinnest possible layer between development and production for the modern web.",
-  "keywords": [
-    "web",
-    "frontend",
-    "ui",
-    "backend",
-    "utilities",
-    "library",
-    "modern"
-  ],
-  "version": "1.6.0",
-  "license": "MIT",
-  "author": {
-    "name": "Daniel Ethridge",
-    "url": "https://git.io/de"
-  },
-  "homepage": "https://technicalsource.dev/bruh",
-  "repository": "https://github.com/Technical-Source/bruh.git",
-  "bugs": "https://github.com/Technical-Source/bruh/issues",
-  "type": "module",
-  "exports": {
-    "./dom": {
-      "node": "./src/dom/node/index.mjs",
-      "browser": "./src/dom/browser/index.mjs"
-    },
-    "./dom/html": {
-      "node": "./src/dom/node/html.mjs",
-      "browser": "./src/dom/browser/html.mjs"
-    },
-    "./dom/svg": {
-      "node": "./src/dom/node/svg.mjs",
-      "browser": "./src/dom/browser/svg.mjs"
-    },
-    "./dom/live-fragment": {
-      "browser": "./src/dom/browser/live-fragment.mjs"
-    },
-    "./reactive": "./src/reactive/index.mjs",
-    "./util": "./src/util/index.mjs",
-    "./components/*": "./src/components/*.mjs",
-    "./media/images": {
-      "node": "./src/media/images.mjs"
-    }
-  },
-  "bin": {
-    "bruh": "./src/cli/index.mjs"
-  },
-  "scripts": {},
-  "optionalDependencies": {
-    "cac": "^6.7.3",
-    "sharp": "^0.28.3"
-  },
-  "browserslist": [
-    "ios_saf >= 12.4",
-    "and_chr >= 88",
-    "chrome  >= 87",
-    "safari  >= 13.1",
-    "edge    >= 87",
-    "firefox >= 84"
+  "name": "bruh-monorepo",
+  "private": true,
+  "workspaces": [
+    "./packages/*"
   ]
 }

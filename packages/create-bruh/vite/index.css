@@ -1,0 +1,39 @@
+/* A little style reset */
+*, ::after, ::before {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+  color: inherit;
+  font-family: inherit;
+  overflow-wrap: break-word;
+}
+
+:root {
+  font-family: system-ui;
+  font-size: clamp(1em, 1em + 1vmin, 2em);
+}
+
+main {
+  width: 100vw;
+  height: 100vh;
+
+  display: grid;
+  gap: 1em;
+  place-items: center;
+  padding: 1em;
+
+  & > h1 {
+    font-size: 3em;
+  }
+
+  & > .counter {
+    font-size: 1em;
+    padding: 0.25em;
+    border-radius: 0.25em;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
