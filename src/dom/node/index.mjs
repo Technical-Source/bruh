@@ -1,26 +1,28 @@
 // https://html.spec.whatwg.org/multipage/syntax.html#void-elements
+const voidElements = [
+  "base",
+  "link",
+  "meta",
+
+  "hr",
+  "br",
+  "wbr",
+
+  "area",
+  "img",
+  "track",
+
+  "embed",
+  "param",
+  "source",
+
+  "col",
+
+  "input"
+]
+
 const isVoidElement = element =>
-  [
-    "base",
-    "link",
-    "meta",
-
-    "hr",
-    "br",
-    "wbr",
-
-    "area",
-    "img",
-    "track",
-
-    "embed",
-    "param",
-    "source",
-
-    "col",
-
-    "input"
-  ].includes(element)
+  voidElements.includes(element)
 
 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
 // https://html.spec.whatwg.org/multipage/syntax.html#cdata-rcdata-restrictions
@@ -35,31 +37,23 @@ const escapeForDoubleQuotedAttribute = x =>
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
 
-const isAttributes = x =>
-  !(x instanceof MetaNode || x instanceof MetaRawString) &&
-  typeof x == "object"
+// A basic check for if a value is allowed as a meta node's child
+// It's responsible for quickly checking the type, not deep validation
+const isMetaNodeChild = x =>
+  x.isBruhMetaNode ||
+  x.isBruhMetaRawString ||
+  Array.isArray(x) ||
+  (typeof x !== "object" && typeof x !== "function")
+
+
 
 // Meta Nodes
 
-export class MetaNode {
-  constructor() {
-    this.properties = {}
-  }
-
-  toString() {}
-
-  toNode() {}
-
-  addProperties(properties = {}) {
-    Object.assign(this.properties, properties)
-
-    return this
-  }
-}
-
-export class MetaTextNode extends MetaNode {
+export class MetaTextNode {
   constructor(textContent) {
-    super()
+    this.isBruhMetaNode =
+    this.isBruhMetaTextNode = true
+
     this.textContent = textContent
     this.tag = undefined
   }
@@ -72,12 +66,6 @@ export class MetaTextNode extends MetaNode {
     }>${ escapeForElement(this.textContent) }</bruh-textnode>`
   }
 
-  toNode() {
-    const node = document.createTextNode(this.textContent)
-    Object.assign(node, this.properties)
-    return node
-  }
-
   setTag(tag = "") {
     this.tag = tag
 
@@ -85,11 +73,12 @@ export class MetaTextNode extends MetaNode {
   }
 }
 
-export class MetaElement extends MetaNode {
-  constructor(name, namespace) {
-    super()
+export class MetaElement {
+  constructor(name) {
+    this.isBruhMetaNode =
+    this.isBruhMetaElement = true
+
     this.name = name
-    this.namespace = namespace
     this.children = []
 
     this.attributes = {}
@@ -97,15 +86,11 @@ export class MetaElement extends MetaNode {
   }
 
   toString() {
-    const datasetWithTag =
-      this.tag
-        ? Object.assign({}, this.dataset, { bruh: this.tag })
-        : this.dataset
     // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
     const attributes =
       [
         ...Object.entries(this.attributes),
-        ...Object.entries(datasetWithTag)
+        ...Object.entries(this.dataset)
           .map(([name, value]) => {
             // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem
             const skewered = name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)
@@ -113,7 +98,7 @@ export class MetaElement extends MetaNode {
           })
       ]
         .map(([name, value]) =>
-          value == ""
+          value === ""
             ? ` ${name}`
             : ` ${name}="${escapeForDoubleQuotedAttribute(value)}"`
         ).join("")
@@ -122,47 +107,18 @@ export class MetaElement extends MetaNode {
 
     if (isVoidElement(this.name))
       return startTag
-    else {
-      const contents =
-        this.children
-          .flat(Infinity)
-          .map(child =>
-            (child instanceof MetaNode || child instanceof MetaRawString)
-              ? child.toString()
-              : escapeForElement(child)
-          ).join("")
-      // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
-      const endTag = `</${this.name}>`
-      return startTag + contents + endTag
-    }
-  }
 
-  toNode() {
-    const node =
-      this.namespace
-        ? document.createElementNS(this.namespace, this.name)
-        : document.createElement  (                this.name)
-
-    // Add children
-    node.append(...this.children
-      .flat(Infinity)
-      .map(child => {
-        if (child instanceof MetaNode)
-          return child.toNode()
-
-        if (child instanceof Node)
-          return child
-
-        return child + "" // Coerce to a string to become a bare text node
-      })
-    )
-    // Assign properties, attributes, and dataset
-    Object.assign(node, this.properties)
-    Object.entries(this.attributes)
-      .forEach(([name, value]) => node.setAttribute(name, value))
-    Object.assign(node.dataset, this.dataset)
-
-    return node
+    const contents =
+      this.children
+        .flat(Infinity)
+        .map(child => {
+          return (child.isBruhMetaNode || child.isBruhMetaRawString)
+            ? child.toString()
+            : escapeForElement(child)
+        }).join("")
+    // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
+    const endTag = `</${this.name}>`
+    return startTag + contents + endTag
   }
 
   addAttributes(attributes = {}) {
@@ -176,22 +132,11 @@ export class MetaElement extends MetaNode {
 
     return this
   }
-
-  prepend(...xs) {
-    this.children.unshift(...xs)
-
-    return this
-  }
-
-  append(...xs) {
-    this.children.push(...xs)
-
-    return this
-  }
 }
 
 export class MetaRawString {
   constructor(string) {
+    this.isBruhMetaRawString = true
     this.string = string
   }
 
@@ -200,35 +145,21 @@ export class MetaRawString {
   }
 }
 
+
+
 // Convenience functions
 
 export const rawString = string =>
   new MetaRawString(string)
 
-export const hydrateTextNodes = () => {
-  const tagged = {}
-  const bruhTextNodes = document.getElementsByTagName("bruh-textnode")
-
-  for (const bruhTextNode of bruhTextNodes) {
-    const textNode = document.createTextNode(bruhTextNode.textContent)
-
-    if (bruhTextNode.dataset.tag)
-      tagged[bruhTextNode.dataset.tag] = textNode
-
-    bruhTextNode.replaceWith(textNode)
-  }
-  
-  return tagged
-}
-
 const createMetaTextNode = textContent =>
   new MetaTextNode(textContent)
 
-const createMetaElement = (name, namespace) => (...variadic) => {
-  const meta = new MetaElement(name, namespace)
+const createMetaElement = name => (...variadic) => {
+  const meta = new MetaElement(name)
 
   // Implement optional attributes as first argument
-  if (isAttributes(variadic[0]))
+  if (!isMetaNodeChild(variadic[0]))
     [meta.attributes, ...meta.children] = variadic
   else {
     meta.attributes = {}
