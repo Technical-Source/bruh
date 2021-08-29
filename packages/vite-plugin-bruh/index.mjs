@@ -19,7 +19,7 @@ const mdx = ({ rehypePlugins } = {}) => {
         pragmaFrag: "JSXFragment"
       })
 
-      const code = result.contents
+      const code = result.value
         .replace(
           `import h from "react"`,
           `import { h, JSXFragment } from "bruh/dom"`
