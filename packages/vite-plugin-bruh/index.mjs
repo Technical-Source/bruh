@@ -3,9 +3,9 @@ import path from "path"
 import vite from "vite"
 import { compile } from "xdm"
 
-const mdx = ({ rehypePlugins } = {}) => {
+const mdx = ({ xdmOptions } = {}) => {
   return {
-    name: "bruh-mdx",
+    name: "bruh:mdx",
     enforce: "pre",
 
     async transform(source, id) {
@@ -13,10 +13,10 @@ const mdx = ({ rehypePlugins } = {}) => {
         return
 
       const result = await compile(source, {
-        rehypePlugins,
         jsxRuntime: "classic",
         pragma: "h",
-        pragmaFrag: "JSXFragment"
+        pragmaFrag: "JSXFragment",
+        ...xdmOptions
       })
 
       const code = result.value
@@ -86,12 +86,15 @@ export const bruhDev = ({ htmlRenderFileExtention, root, external } = {}) => {
   }
 
   return {
-    name: "bruh-dev",
+    name: "bruh:dev",
     apply: "serve",
     enforce: "pre",
 
     config() {
       return {
+        optimizeDeps: {
+          exclude: ["bruh/dom"]
+        },
         ssr: {
           external
         }
@@ -134,7 +137,7 @@ export const bruhBuild = ({ htmlRenderFileExtention, root } = {}) => {
   const idToHtmlRenderFile = {}
 
   return {
-    name: "bruh-build",
+    name: "bruh:build",
     apply: "build",
     enforce: "pre",
 
@@ -192,7 +195,7 @@ export const bruhBuild = ({ htmlRenderFileExtention, root } = {}) => {
 
 export const bruhJSX = () => {
   return {
-    name: "bruh-jsx",
+    name: "bruh:jsx",
 
     config() {
       return {
@@ -210,11 +213,11 @@ export const bruh = ({
   htmlRenderFileExtention = /\.html\.(mjs|jsx?|tsx?)$/,
   root,
   external = [],
-  rehypePlugins = []
+  xdmOptions = {}
 } = {}) =>
   [
     mdx({
-      rehypePlugins
+      xdmOptions
     }),
     bruhDev({
       htmlRenderFileExtention,

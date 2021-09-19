@@ -2,9 +2,33 @@
 
 import { resolve } from "path"
 import { mkdir, readdir, stat, copyFile, readFile, writeFile, rename } from "fs/promises"
+import { execSync } from "child_process"
+import fetch from "node-fetch"
 
 import prompts from "prompts"
 import kleur from "kleur"
+import semver from "semver"
+
+const { version } = JSON.parse(
+  await readFile(
+    new URL("./package.json", import.meta.url).pathname
+  )
+)
+const latestVersion = await fetch("https://registry.npmjs.org/-/package/create-bruh/dist-tags")
+  .then(res => res.json())
+  .then(data => data.latest)
+  .catch(() => {
+    try {
+      return execSync("npm view create-bruh version").toString().trim()
+    } catch {}
+  })
+
+if (latestVersion && semver.lt(version, latestVersion)) {
+  console.error(`You are running create-bruh@${version}, when the latest version is ${latestVersion}`)
+  console.log("This can be corrected by running:")
+  console.log(kleur.bold().green("npm init bruh@latest"))
+  process.exit(1)
+}
 
 const questions = [
   {

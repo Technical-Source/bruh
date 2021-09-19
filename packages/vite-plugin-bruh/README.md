@@ -22,7 +22,11 @@ export default defineConfig({
       root,
       // A (hopefully) temporary workaround of allowed node module imports
       // Adds to the default array of ["fs", "path", "crypto"]
-      external
+      external,
+      // Options for the MDX compiler (xdm)
+      // Documentation at https://github.com/wooorm/xdm#compilefile-options
+      // e.g. for adding syntax highlighting by setting to { rehypePlugins: [ await import("@mapbox/rehype-prism") ] }
+      xdmOptions
     })
   ]
 })
@@ -104,3 +108,7 @@ path.resolve("a/path/relative/to/the/vite/currentWorkingDirectory")
 // Instead of what you would expect to work
 new URL("a/path/relative/to/this/file", import.meta.url).pathname
 ```
+
+For MDX support, there is a workaround that replaces (in mdx files) any `className` strings with `class`.
+You probably won't run into that problem before it is fixed in a more correct way, but it can be solved
+by just writing `"class" + "Name"`, `"class\u004eame"`, `class&#78;ame` or something similar.
