@@ -2,13 +2,18 @@ import { LiveFragment } from "./live-fragment.mjs"
 import { reactiveDo } from "../../reactive/index.mjs"
 import { maybeDo } from "../../util/index.mjs"
 
+const isReactive     = Symbol.for("bruh reactive")
+const isMetaNode     = Symbol.for("bruh meta node")
+const isMetaTextNode = Symbol.for("bruh meta text node")
+const isMetaElement  = Symbol.for("bruh meta element")
+
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation
 const isMetaNodeChild = x =>
   (typeof x === "object" && x !== null)
     // Only specific objects are allowed to be children
-    ? x.isBruhMetaNode ||
-      x.isBruhReactive ||
+    ? x[isMetaNode] ||
+      x[isReactive] ||
       x instanceof Node ||
       // We don't bother checking every array item, just assume it contains valid children
       Array.isArray(x)
@@ -16,7 +21,7 @@ const isMetaNodeChild = x =>
     : typeof x !== "function"
 
 const toNode = x => {
-  if (x.isBruhMetaNode)
+  if (x[isMetaNode])
     return x.node
 
   if (x instanceof Node)
@@ -29,7 +34,7 @@ export const childrenToNodes = children =>
   children
     .flat(Infinity)
     .flatMap(child => {
-      if (!child.isBruhReactive)
+      if (!child[isReactive])
         return [toNode(child)]
 
       if (Array.isArray(child.value)) {
@@ -55,10 +60,10 @@ export const childrenToNodes = children =>
 
 export class MetaTextNode {
   constructor(textContent) {
-    this.isBruhMetaNode =
-    this.isBruhMetaTextNode = true
+    this[isMetaNode] =
+    this[isMetaTextNode] = true
 
-    if (textContent.isBruhReactive) {
+    if (textContent[isReactive]) {
       this.node = document.createTextNode(textContent.value)
       textContent.react(() => {
         this.node.textContent = textContent.value
@@ -78,8 +83,8 @@ export class MetaTextNode {
 
 export class MetaElement {
   constructor(name, namespace) {
-    this.isBruhMetaNode =
-    this.isBruhMetaElement = true
+    this[isMetaNode] =
+    this[isMetaElement] = true
 
     this.node =
       namespace

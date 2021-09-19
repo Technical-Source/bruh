@@ -1,6 +1,8 @@
+const isReactive = Symbol.for("bruh reactive")
+
 export class Reactive {
   constructor(value) {
-    this.isBruhReactive = true
+    this[isReactive] = true
 
     this._value = value
     this._reactors = new Set()
@@ -33,27 +35,25 @@ export class Reactive {
   }
 }
 
-export const r = (x, f) => {
-  if (typeof f === "function") {
-    const derived = new Reactive(f())
-    const update = () => {
-      derived.value = f()
-    }
+export const r = (xOrDependencies, f) => {
+  // If no function f is specified, make a node for x
+  if (!f)
+    return new Reactive(xOrDependencies)
 
-    for (const dependency of x)
-      dependency.react(update)
+  // If there is a function, make a node that depends on other nodes
+  const derived = new Reactive(f())
 
-    return derived
-  }
+  const update = () =>
+    derived.value = f()
+  for (const dependency of xOrDependencies)
+    dependency.react(update)
 
-  return new Reactive(x)
+  return derived
 }
 
 export const reactiveDo = (x, f) => {
-  if (!x.isBruhReactive)
-    return f(x)
-
-  const result = f(x.value)
-  x.react(() => f(x.value))
-  return result
+  if (x[isReactive])
+    x.react(() => f(x.value))
+  else
+    f(x)
 }

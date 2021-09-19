@@ -37,13 +37,18 @@ const escapeForDoubleQuotedAttribute = x =>
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
 
+const isMetaNode      = Symbol.for("bruh meta node")
+const isMetaTextNode  = Symbol.for("bruh meta text node")
+const isMetaElement   = Symbol.for("bruh meta element")
+const isMetaRawString = Symbol.for("bruh meta raw string")
+
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation
 const isMetaNodeChild = x =>
   (typeof x === "object" && x !== null)
     // Only specific objects are allowed to be children
-    ? x.isBruhMetaNode ||
-      x.isBruhMetaRawString ||
+    ? x[isMetaNode] ||
+      x[isMetaRawString] ||
       // We don't bother checking every array item, just assume it contains valid children
       Array.isArray(x)
     // Everything else, as long as it isn't a function, can be a child when stringified
@@ -55,8 +60,8 @@ const isMetaNodeChild = x =>
 
 export class MetaTextNode {
   constructor(textContent) {
-    this.isBruhMetaNode =
-    this.isBruhMetaTextNode = true
+    this[isMetaNode] =
+    this[isMetaTextNode] = true
 
     this.textContent = textContent
     this.tag = undefined
@@ -79,8 +84,8 @@ export class MetaTextNode {
 
 export class MetaElement {
   constructor(name) {
-    this.isBruhMetaNode =
-    this.isBruhMetaElement = true
+    this[isMetaNode] =
+    this[isMetaElement] = true
 
     this.name = name
     this.children = []
@@ -116,7 +121,7 @@ export class MetaElement {
       this.children
         .flat(Infinity)
         .map(child => {
-          return (child.isBruhMetaNode || child.isBruhMetaRawString)
+          return (child[isMetaNode] || child[isMetaRawString])
             ? child.toString()
             : escapeForElement(child)
         }).join("")
@@ -140,7 +145,7 @@ export class MetaElement {
 
 export class MetaRawString {
   constructor(string) {
-    this.isBruhMetaRawString = true
+    this[isMetaRawString] = true
     this.string = string
   }
 
