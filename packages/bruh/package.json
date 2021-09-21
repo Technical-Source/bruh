@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.7.0",
+  "version": "1.7.1",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -25,12 +25,15 @@
   },
   "type": "module",
   "exports": {
+    "./": {
+      "browser": "./src/index.mjs"
+    },
     "./dom": {
       "node": "./src/dom/index.node.mjs",
       "browser": "./src/dom/index.browser.mjs"
     },
     "./dom/live-fragment": {
-      "browser": "./src/dom/browser/live-fragment.mjs"
+      "browser": "./src/dom/live-fragment.mjs"
     },
     "./reactive": "./src/reactive/index.mjs",
     "./util": "./src/util/index.mjs",
@@ -42,10 +45,16 @@
   "bin": {
     "bruh": "./src/cli/index.mjs"
   },
-  "scripts": {},
+  "scripts": {
+    "build": "vite build",
+    "prepare": "npm run build"
+  },
   "optionalDependencies": {
     "cac": "^6.7.3",
     "sharp": "^0.28.3"
+  },
+  "devDependencies": {
+    "vite": "^2.5.10"
   },
   "browserslist": [
     "ios_saf >= 12.4",
