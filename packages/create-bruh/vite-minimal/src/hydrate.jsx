@@ -1,4 +1,7 @@
-import { main } from "bruh/dom/html"
+import { e } from "bruh/dom"
+import { functionAsObject } from "bruh/util"
+const { main } = functionAsObject(e)
+
 import { counter } from "./counter.jsx"
 
 const app =

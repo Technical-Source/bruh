@@ -7,10 +7,10 @@
   },
   "devDependencies": {
     "postcss-preset-env": "^6.7.0",
-    "vite": "^2.5.1",
-    "vite-plugin-bruh": "^0.4.4"
+    "vite": "^2.5.10",
+    "vite-plugin-bruh": "^0.4.5"
   },
   "dependencies": {
-    "bruh": "^1.6.4"
+    "bruh": "^1.7.0"
   }
 }

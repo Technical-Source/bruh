@@ -44,3 +44,12 @@ export const maybeDo = (existsThen, emptyThen) => x => {
   else
     existsThen(x)
 }
+
+// Creates an object (as a Proxy) that acts as a function
+// So functionAsObject(f).property is equivalent to f("property")
+// This is can be useful when combined with destructuring syntax, e.g.:
+// const { html, head, title, body, main, h1, p } = functionAsObject(e)
+export const functionAsObject = f =>
+  new Proxy({}, {
+    get: (_, property) => f(property)
+  })

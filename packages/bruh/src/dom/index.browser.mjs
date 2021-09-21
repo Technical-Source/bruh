@@ -1,6 +1,6 @@
 import { LiveFragment } from "./live-fragment.mjs"
-import { reactiveDo } from "../../reactive/index.mjs"
-import { maybeDo } from "../../util/index.mjs"
+import { reactiveDo } from "../reactive/index.mjs"
+import { maybeDo } from "../util/index.mjs"
 
 const isReactive     = Symbol.for("bruh reactive")
 const isMetaNode     = Symbol.for("bruh meta node")

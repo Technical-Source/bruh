@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-bruh",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "A vite plugin to integrate with bruh",
   "type": "module",
   "main": "./index.mjs",
