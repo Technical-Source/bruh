@@ -45,15 +45,13 @@ const isMetaRawString = Symbol.for("bruh meta raw string")
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation
 const isMetaNodeChild = x =>
-  (typeof x === "object" && x !== null)
-    // Only specific objects are allowed to be children
-    ? x[isMetaNode] ||
-      x[isMetaRawString] ||
-      // We don't bother checking every array item, just assume it contains valid children
-      Array.isArray(x)
-    // Everything else, as long as it isn't a function, can be a child when stringified
-    : typeof x !== "function"
-
+  // meta nodes, reactives, and DOM nodes
+  x?.[isMetaNode] ||
+  x?.[isMetaRawString] ||
+  // Any array, just assume it contains valid children
+  Array.isArray(x) ||
+  // Everything else, as long as it isn't a function, can be a child when stringified
+  typeof x !== "function"
 
 
 // Meta Nodes

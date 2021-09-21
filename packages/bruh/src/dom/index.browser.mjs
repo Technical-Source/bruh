@@ -10,15 +10,14 @@ const isMetaElement  = Symbol.for("bruh meta element")
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation
 const isMetaNodeChild = x =>
-  (typeof x === "object" && x !== null)
-    // Only specific objects are allowed to be children
-    ? x[isMetaNode] ||
-      x[isReactive] ||
-      x instanceof Node ||
-      // We don't bother checking every array item, just assume it contains valid children
-      Array.isArray(x)
-    // Everything else, as long as it isn't a function, can be a child when stringified
-    : typeof x !== "function"
+  // meta nodes, reactives, and DOM nodes
+  x?.[isMetaNode] ||
+  x?.[isReactive] ||
+  x instanceof Node ||
+  // Any array, just assume it contains valid children
+  Array.isArray(x) ||
+  // Everything else, as long as it isn't a function, can be a child when stringified
+  typeof x !== "function"
 
 const toNode = x => {
   if (x[isMetaNode])

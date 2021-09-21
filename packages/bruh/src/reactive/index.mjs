@@ -1,37 +1,40 @@
 const isReactive = Symbol.for("bruh reactive")
 
 export class Reactive {
+  #value
+  #reactors
+
   constructor(value) {
     this[isReactive] = true
 
-    this._value = value
-    this._reactors = new Set()
+    this.#value = value
+    this.#reactors = new Set()
   }
 
   get value() {
-    return this._value
+    return this.#value
   }
 
   set value(newValue) {
-    if (newValue === this._value)
+    if (newValue === this.#value)
       return
 
-    this._value = newValue
+    this.#value = newValue
     this.wasUpdated()
 
     return newValue
   }
 
   wasUpdated() {
-    for (const reactor of this._reactors)
+    for (const reactor of this.#reactors)
       reactor()
   }
 
   react(reactor) {
-    this._reactors.add(reactor)
+    this.#reactors.add(reactor)
 
     return () =>
-      this._reactors.delete(reactor)
+      this.#reactors.delete(reactor)
   }
 }
 
