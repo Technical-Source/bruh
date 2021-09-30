@@ -38,14 +38,14 @@ export const childrenToNodes = children =>
 
       if (Array.isArray(child.value)) {
         const liveFragment = new LiveFragment()
-        child.react(() => {
+        child.addReaction(() => {
           liveFragment.replaceChildren(...childrenToNodes(child.value))
         })
         return [liveFragment.startMarker, ...childrenToNodes(child.value), liveFragment.endMarker]
       }
 
       let node = toNode(child.value)
-      child.react(() => {
+      child.addReaction(() => {
         const oldNode = node
         node = toNode(child.value)
         oldNode.replaceWith(node)
@@ -64,7 +64,7 @@ export class MetaTextNode {
 
     if (textContent[isReactive]) {
       this.node = document.createTextNode(textContent.value)
-      textContent.react(() => {
+      textContent.addReaction(() => {
         this.node.textContent = textContent.value
       })
     }
