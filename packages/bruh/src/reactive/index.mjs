@@ -49,10 +49,12 @@ export class FunctionalReactive {
   #derivatives = new Set()
 
   // Keep track of all the pending changes from the value setter
-  static #pendingUpdates = new Map()
+  static #settersQueue = new Map()
   // A queue of derivatives to potentially update, sorted into sets by depth
   // This starts with depth 1 and can potentially have holes
   static #derivativesQueue = []
+  // A queue of reactions to run after the graph is fully updated
+  static #reactionsQueue = []
 
   constructor(x, f) {
     if (!f) {
@@ -70,7 +72,7 @@ export class FunctionalReactive {
   get value() {
     // If there are any pending updates, go ahead and apply them first
     // It's ok that there's already a microtask queued for this
-    if (FunctionalReactive.#pendingUpdates.size)
+    if (FunctionalReactive.#settersQueue.size)
       FunctionalReactive.applyUpdates()
 
     return this.#value
@@ -82,10 +84,10 @@ export class FunctionalReactive {
       return
 
     // Unless asked for earlier, these updates are just queued up until the microtasks run
-    if (!FunctionalReactive.#pendingUpdates.size)
+    if (!FunctionalReactive.#settersQueue.size)
       queueMicrotask(FunctionalReactive.applyUpdates)
 
-    FunctionalReactive.#pendingUpdates.set(this, newValue)
+    FunctionalReactive.#settersQueue.set(this, newValue)
   }
 
   addReaction(reaction) {
@@ -101,8 +103,7 @@ export class FunctionalReactive {
       return
 
     this.#value = newValue
-    for (const reaction of this.#reactions)
-      reaction(newValue)
+    FunctionalReactive.#reactionsQueue.push(...this.#reactions)
 
     const queue = FunctionalReactive.#derivativesQueue
     for (const derivative of this.#derivatives) {
@@ -116,22 +117,25 @@ export class FunctionalReactive {
 
   // Apply pending updates from actually changed source nodes
   static applyUpdates() {
-    if (!FunctionalReactive.#pendingUpdates.size)
+    if (!FunctionalReactive.#settersQueue.size)
       return
 
-    // Bootstrap by applying the updates from the pending source node updates
-    for (const [sourceNode, newValue] of FunctionalReactive.#pendingUpdates.entries())
+    // Bootstrap by applying the updates from the pending setters
+    for (const [sourceNode, newValue] of FunctionalReactive.#settersQueue.entries())
       sourceNode.#applyUpdate(newValue)
-
-    FunctionalReactive.#pendingUpdates.clear()
+    FunctionalReactive.#settersQueue.clear()
 
     // Iterate down the depths, ignoring holes
     // Note that both the queue (Array) and each depth Set iterators update as items are added
     for (const depthSet of FunctionalReactive.#derivativesQueue) if (depthSet)
       for (const derivative of depthSet)
         derivative.#applyUpdate(derivative.#f())
-
     FunctionalReactive.#derivativesQueue.length = 0
+
+    // Call all reactions now that the graph has a fully consistent state
+    for (const reaction of FunctionalReactive.#reactionsQueue)
+      reaction()
+    FunctionalReactive.#reactionsQueue.length = 0
   }
 }
 
