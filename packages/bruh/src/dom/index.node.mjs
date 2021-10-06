@@ -57,12 +57,14 @@ const isMetaNodeChild = x =>
 // Meta Nodes
 
 export class MetaTextNode {
-  constructor(textContent) {
-    this[isMetaNode] =
-    this[isMetaTextNode] = true
+  [isMetaNode]     = true;
+  [isMetaTextNode] = true
 
+  textContent
+  tag
+
+  constructor(textContent) {
     this.textContent = textContent
-    this.tag = undefined
   }
 
   toString() {
@@ -81,29 +83,21 @@ export class MetaTextNode {
 }
 
 export class MetaElement {
+  [isMetaNode]    = true;
+  [isMetaElement] = true
+
+  name
+  attributes = {}
+  children = []
+
   constructor(name) {
-    this[isMetaNode] =
-    this[isMetaElement] = true
-
     this.name = name
-    this.children = []
-
-    this.attributes = {}
-    this.dataset = {}
   }
 
   toString() {
     // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
     const attributes =
-      [
-        ...Object.entries(this.attributes),
-        ...Object.entries(this.dataset)
-          .map(([name, value]) => {
-            // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem
-            const skewered = name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)
-            return [`data-${skewered}`, value]
-          })
-      ]
+      Object.entries(this.attributes)
         .map(([name, value]) =>
           value === ""
             ? ` ${name}`
@@ -135,15 +129,64 @@ export class MetaElement {
   }
 
   addDataAttributes(dataAttributes = {}) {
-    Object.assign(this.dataset, dataAttributes)
+    Object.entries(dataAttributes)
+      .forEach(([name, value]) => {
+        // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem
+        const skewered = name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)
+        this.attributes[`data-${skewered}`] = value
+      })
+
+    return this
+  }
+
+  addStyles(styles = {}) {
+    // Doesn't support proper escaping
+    // https://www.w3.org/TR/css-syntax-3/#ref-for-parse-a-list-of-declarations%E2%91%A0
+    // https://www.w3.org/TR/css-syntax-3/#typedef-ident-token
+    const currentStyles = Object.fromEntries(
+      (this.attributes.style || "")
+        .split(";").filter(s => s.length)
+        .map(declaration => declaration.split(":").map(s => s.trim()))
+    )
+
+    Object.assign(currentStyles, styles)
+
+    this.attributes.style =
+      Object.entries(currentStyles)
+        .map(([property, value]) => `${property}:${value}`)
+        .join(";")
+
+    return this
+  }
+
+  toggleClasses(classes = {}) {
+    // Doesn't support proper escaping
+    // https://html.spec.whatwg.org/multipage/dom.html#global-attributes:classes-2
+    const classList = new Set(
+      (this.attributes.class || "")
+        .split(/\s+/).filter(s => s.length)
+    )
+
+    Object.entries(classes)
+      .forEach(([name, value]) => {
+        if (value)
+          classList.add(name)
+        else
+          classList.delete(name)
+      })
+
+    this.attributes.class = Array.from(classList).join(" ")
 
     return this
   }
 }
 
 export class MetaRawString {
+  [isMetaRawString] = true
+
+  string
+
   constructor(string) {
-    this[isMetaRawString] = true
     this.string = string
   }
 

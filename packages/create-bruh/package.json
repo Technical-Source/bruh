@@ -1,6 +1,6 @@
 {
   "name": "create-bruh",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Quickly start working with bruh",
   "main": "./index.mjs",
   "bin": {

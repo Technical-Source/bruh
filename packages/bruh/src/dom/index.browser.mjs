@@ -58,19 +58,21 @@ export const childrenToNodes = children =>
 // Meta Nodes
 
 export class MetaTextNode {
-  constructor(textContent) {
-    this[isMetaNode] =
-    this[isMetaTextNode] = true
+  [isMetaNode]    = true;
+  [isMetaElement] = true
 
-    if (textContent[isReactive]) {
-      this.node = document.createTextNode(textContent.value)
-      textContent.addReaction(() => {
-        this.node.textContent = textContent.value
-      })
-    }
-    else {
+  node
+
+  constructor(textContent) {
+    if (!textContent[isReactive]) {
       this.node = document.createTextNode(textContent)
+      return
     }
+
+    this.node = document.createTextNode(textContent.value)
+    textContent.addReaction(() => {
+      this.node.textContent = textContent.value
+    })
   }
 
   addProperties(properties = {}) {
@@ -81,10 +83,12 @@ export class MetaTextNode {
 }
 
 export class MetaElement {
-  constructor(name, namespace) {
-    this[isMetaNode] =
-    this[isMetaElement] = true
+  [isMetaNode]    = true;
+  [isMetaElement] = true
 
+  node
+
+  constructor(name, namespace) {
     this.node =
       namespace
         ? document.createElementNS(namespace, name)
@@ -122,6 +126,27 @@ export class MetaElement {
           value =>        this.node.dataset[name] = value,
           ()    => delete this.node.dataset[name]
         )
+      )
+
+    return this
+  }
+
+  addStyles(styles = {}) {
+    for (const property in styles)
+      reactiveDo(styles[property],
+        maybeDo(
+          value => this.node.style.setProperty   (property, value),
+          ()    => this.node.style.removeProperty(property)
+        )
+      )
+
+    return this
+  }
+
+  toggleClasses(classes = {}) {
+    for (const name in classes)
+      reactiveDo(classes[name],
+        value => this.node.classList.toggle(name, value)
       )
 
     return this

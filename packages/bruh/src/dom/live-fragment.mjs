@@ -9,10 +9,8 @@
 // Also, make sure not to call .normalize() on the parent element,
 // because that would ruin the placeholders.
 export class LiveFragment {
-  constructor() {
-    this.startMarker = document.createTextNode("")
-    this.endMarker   = document.createTextNode("")
-  }
+  startMarker = document.createTextNode("")
+  endMarker   = document.createTextNode("")
 
   static from(firstNode, lastNode) {
     const liveFragment = new this()
