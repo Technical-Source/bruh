@@ -1,17 +1,10 @@
-import { hydrateTextNodes } from "bruh/dom"
+import { MetaElement, t } from "bruh/dom"
+import { r } from "bruh/reactive"
 
-const { counterNumber } = hydrateTextNodes()
 const counter = document.querySelector(".counter")
+const placeholder = MetaElement.from(counter.querySelector("bruh-textnode"))
 
-let n = 0
-counterNumber.bruh = {
-  get n() {
-    return n
-  },
+const count = r(0)
+placeholder.replaceWith(t(count))
 
-  set n(number) {
-    counterNumber.textContent = n = number
-  }
-}
-
-counter.addEventListener("click", () => counterNumber.bruh.n++)
+counter.addEventListener("click", () => count.value++)

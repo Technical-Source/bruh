@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-bruh",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "A vite plugin to integrate with bruh",
   "type": "module",
   "main": "./index.mjs",
@@ -23,9 +23,9 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "vite": "^2"
+    "vite": "^2.6"
   },
   "dependencies": {
-    "xdm": "^2.0.3"
+    "xdm": "^2.1.0"
   }
 }

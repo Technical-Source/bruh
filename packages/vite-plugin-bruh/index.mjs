@@ -69,7 +69,7 @@ const getHtmlRenderFiles = async (directory, htmlRenderFileExtention, maxDepth =
   }
 }
 
-export const bruhDev = ({ htmlRenderFileExtention, root, external } = {}) => {
+export const bruhDev = ({ htmlRenderFileExtention, root } = {}) => {
   let config = {}
 
   const urlToHtmlRenderFile = async url => {
@@ -89,17 +89,6 @@ export const bruhDev = ({ htmlRenderFileExtention, root, external } = {}) => {
     name: "bruh:dev",
     apply: "serve",
     enforce: "pre",
-
-    config() {
-      return {
-        optimizeDeps: {
-          exclude: ["bruh/dom"]
-        },
-        ssr: {
-          external
-        }
-      }
-    },
 
     configResolved(resolvedConfig) {
       config = resolvedConfig
@@ -212,7 +201,6 @@ export const bruhJSX = () => {
 export const bruh = ({
   htmlRenderFileExtention = /\.html\.(mjs|jsx?|tsx?)$/,
   root,
-  external = [],
   xdmOptions = {}
 } = {}) =>
   [
@@ -221,8 +209,7 @@ export const bruh = ({
     }),
     bruhDev({
       htmlRenderFileExtention,
-      root,
-      external: ["fs", "path", "crypto", ...external]
+      root
     }),
     bruhBuild({
       htmlRenderFileExtention,

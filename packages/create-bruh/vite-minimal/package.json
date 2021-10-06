@@ -6,7 +6,7 @@
     "serve": "vite preview"
   },
   "devDependencies": {
-    "vite": "^2.5.10"
+    "vite": "^2.6.3"
   },
   "dependencies": {
     "bruh": "^1.9.0"

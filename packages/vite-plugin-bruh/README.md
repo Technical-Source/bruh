@@ -20,9 +20,6 @@ export default defineConfig({
       // Absolute path of the root pages directory
       // Defaults to vite's root
       root,
-      // A (hopefully) temporary workaround of allowed node module imports
-      // Adds to the default array of ["fs", "path", "crypto"]
-      external,
       // Options for the MDX compiler (xdm)
       // Documentation at https://github.com/wooorm/xdm#compilefile-options
       // e.g. for adding syntax highlighting by setting to { rehypePlugins: [ await import("@mapbox/rehype-prism") ] }
@@ -93,9 +90,6 @@ This plugin automatically includes jsx support for bruh, meaning that you can fr
 render files (`x.html.jsx`) and hydrate files (`x.jsx`, what vite typically handles).
 
 ## Current Caveats
-
-Vite currently needs an explicit array of node core modules that it should allow to passthrough its module graph.
-You need to specify them in the `external` option, the defaults are just `["fs", "path", "crypto"]` right now.
 
 If you want to use `import.meta.url`, vite will currently give a (non URL!) absolute path that is "relative" to your vite `root`.
 The easiest workaround is to just do something like this:
