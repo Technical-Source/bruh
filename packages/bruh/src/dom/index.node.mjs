@@ -50,8 +50,11 @@ const isMetaNodeChild = x =>
   x?.[isMetaRawString] ||
   // Any array, just assume it contains valid children
   Array.isArray(x) ||
-  // Everything else, as long as it isn't a function, can be a child when stringified
-  typeof x !== "function"
+  // Allow nullish
+  x == null ||
+  // Disallow functions and objects
+  !(typeof x === "function" || typeof x === "object")
+  // Everything else can be a child when stringified
 
 
 // Meta Nodes

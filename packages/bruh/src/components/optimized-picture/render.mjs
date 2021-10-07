@@ -1,4 +1,7 @@
-import { picture, source, img } from "bruh/dom/html"
+import { e } from "bruh/dom"
+import { functionAsObject } from "bruh/util"
+const { picture, source, img } = functionAsObject(e)
+
 import { readFile } from "fs/promises"
 
 export default async options => {

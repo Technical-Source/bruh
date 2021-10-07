@@ -11,6 +11,6 @@
     "vite-plugin-bruh": "^0.5.0"
   },
   "dependencies": {
-    "bruh": "^1.9.0"
+    "bruh": "^1.9.1"
   }
 }
