@@ -257,6 +257,7 @@ var index = /* @__PURE__ */ Object.freeze({
 });
 const isReactive = Symbol.for("bruh reactive");
 const isMetaNode = Symbol.for("bruh meta node");
+const isMetaTextNode = Symbol.for("bruh meta text node");
 const isMetaElement = Symbol.for("bruh meta element");
 const isMetaNodeChild = (x) => (x == null ? void 0 : x[isMetaNode]) || (x == null ? void 0 : x[isReactive]) || x instanceof Node || Array.isArray(x) || x == null || !(typeof x === "function" || typeof x === "object");
 const toNode = (x) => {
@@ -303,7 +304,7 @@ class MetaTextNode {
     return this;
   }
 }
-_c = isMetaNode, _d = isMetaElement;
+_c = isMetaNode, _d = isMetaTextNode;
 class MetaElement {
   constructor(name, namespace) {
     __publicField(this, _e, true);

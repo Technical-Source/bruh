@@ -1,3 +1,5 @@
+/** @typedef { import("./index") } */
+
 const isReactive = Symbol.for("bruh reactive")
 
 // A super simple and performant reactive value implementation

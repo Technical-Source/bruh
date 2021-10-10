@@ -1,3 +1,5 @@
+/** @typedef { import("./index.browser") } */
+
 import { LiveFragment } from "./live-fragment.mjs"
 import { reactiveDo } from "../reactive/index.mjs"
 import { maybeDo } from "../util/index.mjs"
@@ -61,8 +63,8 @@ export const childrenToNodes = children =>
 // Meta Nodes
 
 export class MetaTextNode {
-  [isMetaNode]    = true;
-  [isMetaElement] = true
+  [isMetaNode]     = true;
+  [isMetaTextNode] = true
 
   node
 
