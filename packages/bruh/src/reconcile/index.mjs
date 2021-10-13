@@ -60,3 +60,66 @@ export const compare = (source, target) => {
 
   return changes.reverse()
 }
+
+const compareFast = (source, target) => {
+  const [a, b, insert, remove] =
+    source.length < target.length
+      ? [source, target, "insert", "remove"]
+      : [target, source, "remove", "insert"]
+
+  const Δ = b.length - a.length
+
+  // [-(|a|+1) ... 0 ...  |b|+1]
+  const furthestPoints = Array(1+a.length + 1 + b.length+1).fill(-1)
+  const changes = []
+
+  // diagonal k has vertices (x, y) where k = y - x
+  // there are diagonals ranging from -a.length to b.length
+  // diagonal 0 starts with the source (0, 0)
+  // diagonal Δ ends with the sink (a.length, b.length)
+  const snake = k => {
+    // diagonal below k
+    const yBelow = furthestPoints[k-1] + 1
+    // diagonal above k
+    const yAbove = furthestPoints[k+1]
+
+    let x, y
+    if (yBelow > yAbove) {
+      y = yBelow
+      x = y - k
+      changes[k] = [...changes[k-1] || [], { [insert]: b[y] }]
+    }
+    else {
+      y = yAbove
+      x = y - k
+      changes[k] = [...changes[k+1] || [], { [remove]: a[x] }]
+    }
+
+    while (x < a.length && y < b.length && a[x+1] === b[y+1]) {
+      changes[k].push({ keep: a[x+1] })
+      x++
+      y++
+    }
+
+    furthestPoints[k] = y
+  }
+
+  // p = (d-Δ)/2 where d is the number of insertions and removals
+  // We only need to examine diagonals from 0-p to Δ+p because vertices
+  // outside of the band from the source-p diagonal to sink+p diagonal
+  // by definition cannot have a shorter path than vertices within the p-band
+  for (let p = 0; furthestPoints[Δ] !== b.length; p++) {
+    // Examine diagonals from -p up to Δ-1
+    for (let k = -p;    k < Δ; k++)
+      snake(k)
+
+    // Examine diagonals from Δ + p down to Δ+1
+    for (let k = Δ + p; k > Δ; k--)
+      snake(k)
+
+    // Examine the diagonal at Δ
+    snake(Δ)
+  }
+
+  return changes[Δ].slice(1, -1)
+}
