@@ -61,8 +61,8 @@ export const childrenToNodes = children =>
 // Meta Nodes
 
 export class MetaTextNode {
-  [isMetaNode]    = true;
-  [isMetaElement] = true
+  [isMetaNode]     = true;
+  [isMetaTextNode] = true
 
   node
 
