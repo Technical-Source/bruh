@@ -79,7 +79,7 @@ export class FunctionalReactive {
   }
 
   set value(newValue) {
-    // Only allow souce nodes to be directly updated
+    // Only allow source nodes to be directly updated
     if (this.#depth !== 0)
       return
 
