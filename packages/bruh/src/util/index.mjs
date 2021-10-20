@@ -31,20 +31,6 @@ export const createDestructable = (object, iterable) => {
   return destructable
 }
 
-// A function that acts like Maybe.from(x).ifExists(existsThen).ifEmpty(emptyThen)
-// Except we just use an array in place of a true Maybe type
-// This is useful for setting and removing reactive attributes
-export const maybeDo = (existsThen, emptyThen) => x => {
-  if (Array.isArray(x)) {
-    if (x.length)
-      existsThen(x[0])
-    else
-      emptyThen()
-  }
-  else
-    existsThen(x)
-}
-
 // Creates an object (as a Proxy) that acts as a function
 // So functionAsObject(f).property is equivalent to f("property")
 // This is can be useful when combined with destructuring syntax, e.g.:

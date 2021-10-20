@@ -1,4 +1,4 @@
-const isReactive = Symbol.for("bruh reactive")
+export const isReactive = Symbol.for("bruh reactive")
 
 // A super simple and performant reactive value implementation
 export class SimpleReactive {
