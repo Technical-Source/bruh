@@ -5,7 +5,7 @@ import { isReactive, reactiveDo } from "../reactive/index.mjs"
 
 // A basic check for if a value is allowed as a child in bruh
 // It's responsible for quickly checking the type, not deep validation
-export const isBruhChild = x =>
+const isBruhChild = x =>
   // Reactives and DOM nodes
   x?.[isReactive] ||
   x instanceof Node ||
@@ -55,16 +55,17 @@ export const bruhChildrenToNodes = children =>
 
 //#endregion
 
-//#region Reactive-aware helper functions e.g. applyAttributes()
+//#region Reactive-aware element helper functions e.g. applyAttributes()
 
 // Style attribute rules from an object with
 // potentially reactive and/or undefined values
 export const applyStyles = (element, styles) => {
   for (const property in styles)
     reactiveDo(styles[property], value => {
-      value !== undefined
-        ? element.style.setProperty   (property, value)
-        : element.style.removeProperty(property)
+      if (value !== undefined)
+        element.style.setProperty   (property, value)
+      else
+        element.style.removeProperty(property)
     })
 }
 
@@ -82,9 +83,10 @@ export const applyClasses = (element, classes) => {
 export const applyAttributes = (element, attributes) => {
   for (const name in attributes)
     reactiveDo(attributes[name], value => {
-      value !== undefined
-        ? element.setAttribute   (name, value)
-        : element.removeAttribute(name)
+      if (value !== undefined)
+        element.setAttribute   (name, value)
+      else
+        element.removeAttribute(name)
     })
 }
 
@@ -184,8 +186,9 @@ export const hydrateTextNodes = () => {
   for (const bruhTextNode of bruhTextNodes) {
     const textNode = document.createTextNode(bruhTextNode.textContent)
 
-    if (bruhTextNode.dataset.tag)
-      tagged[bruhTextNode.dataset.tag] = textNode
+    const tag = bruhTextNode.getAttribute("tag")
+    if (tag)
+      tagged[tag] = textNode
 
     bruhTextNode.replaceWith(textNode)
   }
