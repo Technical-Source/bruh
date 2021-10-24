@@ -43,7 +43,7 @@ var __privateMethod = (obj, member, method) => {
   __accessCheck(obj, member, "access private method");
   return method;
 };
-var _a, _value, _reactions, _b, _value2, _reactions2, _f, _depth, _derivatives, _settersQueue, _derivativesQueue, _reactionsQueue, _applyUpdate, applyUpdate_fn, _c, _d, _e, _f2;
+var _a, _value, _reactions, _b, _value2, _reactions2, _f, _depth, _derivatives, _settersQueue, _derivativesQueue, _reactionsQueue, _applyUpdate, applyUpdate_fn;
 class LiveFragment {
   constructor() {
     __publicField(this, "startMarker", document.createTextNode(""));
@@ -99,7 +99,7 @@ var liveFragment = /* @__PURE__ */ Object.freeze({
   [Symbol.toStringTag]: "Module",
   LiveFragment
 });
-const isReactive$1 = Symbol.for("bruh reactive");
+const isReactive = Symbol.for("bruh reactive");
 class SimpleReactive {
   constructor(value) {
     __publicField(this, _a, true);
@@ -122,7 +122,7 @@ class SimpleReactive {
     return () => __privateGet(this, _reactions).delete(reaction);
   }
 }
-_a = isReactive$1;
+_a = isReactive;
 _value = new WeakMap();
 _reactions = new WeakMap();
 const _FunctionalReactive = class {
@@ -160,7 +160,7 @@ const _FunctionalReactive = class {
     return () => __privateGet(this, _reactions2).delete(reaction);
   }
   static applyUpdates() {
-    var _a2, _b2, _c2;
+    var _a2, _b2, _c;
     if (!__privateGet(_FunctionalReactive, _settersQueue).size)
       return;
     for (const [sourceNode, newValue] of __privateGet(_FunctionalReactive, _settersQueue).entries())
@@ -169,7 +169,7 @@ const _FunctionalReactive = class {
     for (const depthSet of __privateGet(_FunctionalReactive, _derivativesQueue))
       if (depthSet)
         for (const derivative of depthSet)
-          __privateMethod(_c2 = derivative, _applyUpdate, applyUpdate_fn).call(_c2, __privateGet(_b2 = derivative, _f).call(_b2));
+          __privateMethod(_c = derivative, _applyUpdate, applyUpdate_fn).call(_c, __privateGet(_b2 = derivative, _f).call(_b2));
     __privateGet(_FunctionalReactive, _derivativesQueue).length = 0;
     for (const reaction of __privateGet(_FunctionalReactive, _reactionsQueue))
       reaction();
@@ -177,7 +177,7 @@ const _FunctionalReactive = class {
   }
 };
 let FunctionalReactive = _FunctionalReactive;
-_b = isReactive$1;
+_b = isReactive;
 _value2 = new WeakMap();
 _reactions2 = new WeakMap();
 _f = new WeakMap();
@@ -205,7 +205,7 @@ __privateAdd(FunctionalReactive, _derivativesQueue, []);
 __privateAdd(FunctionalReactive, _reactionsQueue, []);
 const r = (x, f) => new FunctionalReactive(x, f);
 const reactiveDo = (x, f) => {
-  if (x == null ? void 0 : x[isReactive$1]) {
+  if (x == null ? void 0 : x[isReactive]) {
     f(x.value);
     return x.addReaction(() => f(x.value));
   }
@@ -214,10 +214,120 @@ const reactiveDo = (x, f) => {
 var index$1 = /* @__PURE__ */ Object.freeze({
   __proto__: null,
   [Symbol.toStringTag]: "Module",
+  isReactive,
   SimpleReactive,
   FunctionalReactive,
   r,
   reactiveDo
+});
+const isBruhChild = (x) => (x == null ? void 0 : x[isReactive]) || x instanceof Node || Array.isArray(x) || x == null || !(typeof x === "function" || typeof x === "object");
+const toNode = (x) => x instanceof Node ? x : document.createTextNode(x);
+const bruhChildrenToNodes = (...children) => children.flat(Infinity).flatMap((child) => {
+  if (!child[isReactive])
+    return [toNode(child)];
+  if (Array.isArray(child.value)) {
+    const liveFragment2 = new LiveFragment();
+    child.addReaction(() => {
+      liveFragment2.replaceChildren(...bruhChildrenToNodes(...child.value));
+    });
+    return [liveFragment2.startMarker, ...bruhChildrenToNodes(...child.value), liveFragment2.endMarker];
+  }
+  let node = toNode(child.value);
+  child.addReaction(() => {
+    const oldNode = node;
+    node = toNode(child.value);
+    oldNode.replaceWith(node);
+  });
+  return [node];
+});
+const applyStyles = (element, styles) => {
+  for (const property in styles)
+    reactiveDo(styles[property], (value) => {
+      if (value !== void 0)
+        element.style.setProperty(property, value);
+      else
+        element.style.removeProperty(property);
+    });
+};
+const applyClasses = (element, classes) => {
+  for (const name in classes)
+    reactiveDo(classes[name], (value) => {
+      element.classList.toggle(name, value);
+    });
+};
+const applyAttributes = (element, attributes) => {
+  for (const name in attributes)
+    reactiveDo(attributes[name], (value) => {
+      if (value !== void 0)
+        element.setAttribute(name, value);
+      else
+        element.removeAttribute(name);
+    });
+};
+const t = (textContent) => {
+  if (!textContent[isReactive])
+    return document.createTextNode(textContent);
+  const node = document.createTextNode(textContent.value);
+  textContent.addReaction(() => {
+    node.textContent = textContent.value;
+  });
+  return node;
+};
+const e = (name) => (...variadic) => {
+  var _a2;
+  if (isBruhChild(variadic[0])) {
+    const element2 = document.createElement(name);
+    element2.append(...bruhChildrenToNodes(...variadic));
+    return element2;
+  }
+  const [props, ...children] = variadic;
+  const { namespace } = (_a2 = props.bruh) != null ? _a2 : {};
+  delete props.bruh;
+  const element = namespace ? document.createElementNS(namespace, name) : document.createElement(name);
+  if (typeof props.style === "object") {
+    applyStyles(element, props.style);
+    delete props.style;
+  }
+  if (typeof props.class === "object") {
+    applyClasses(element, props.class);
+    delete props.class;
+  }
+  applyAttributes(element, props);
+  element.append(...bruhChildrenToNodes(...children));
+  return element;
+};
+const h = (nameOrComponent, props, ...children) => {
+  if (typeof nameOrComponent === "string") {
+    const makeElement = e(nameOrComponent);
+    return props ? makeElement(props, ...children) : makeElement(...children);
+  }
+  return nameOrComponent(__spreadProps(__spreadValues({}, props), { children }));
+};
+const JSXFragment = ({ children }) => children;
+const hydrateTextNodes = () => {
+  const tagged = {};
+  const bruhTextNodes = document.getElementsByTagName("bruh-textnode");
+  for (const bruhTextNode of bruhTextNodes) {
+    const textNode = document.createTextNode(bruhTextNode.textContent);
+    const tag = bruhTextNode.getAttribute("tag");
+    if (tag)
+      tagged[tag] = textNode;
+    bruhTextNode.replaceWith(textNode);
+  }
+  return tagged;
+};
+var index_browser = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  [Symbol.toStringTag]: "Module",
+  bruhChildrenToNodes,
+  applyStyles,
+  applyClasses,
+  applyAttributes,
+  t,
+  e,
+  h,
+  JSXFragment,
+  hydrateTextNodes
 });
 const pipe = (x, ...fs) => fs.reduce((y, f) => f(y), x);
 const dispatch = (target, type, options) => target.dispatchEvent(new CustomEvent(type, __spreadValues({
@@ -234,15 +344,6 @@ const createDestructable = (object, iterable) => {
   });
   return destructable;
 };
-const maybeDo = (existsThen, emptyThen) => (x) => {
-  if (Array.isArray(x)) {
-    if (x.length)
-      existsThen(x[0]);
-    else
-      emptyThen();
-  } else
-    existsThen(x);
-};
 const functionAsObject = (f) => new Proxy({}, {
   get: (_, property) => f(property)
 });
@@ -252,158 +353,7 @@ var index = /* @__PURE__ */ Object.freeze({
   pipe,
   dispatch,
   createDestructable,
-  maybeDo,
   functionAsObject
-});
-const isReactive = Symbol.for("bruh reactive");
-const isMetaNode = Symbol.for("bruh meta node");
-const isMetaElement = Symbol.for("bruh meta element");
-const isMetaNodeChild = (x) => (x == null ? void 0 : x[isMetaNode]) || (x == null ? void 0 : x[isReactive]) || x instanceof Node || Array.isArray(x) || x == null || !(typeof x === "function" || typeof x === "object");
-const toNode = (x) => {
-  if (x[isMetaNode])
-    return x.node;
-  if (x instanceof Node)
-    return x;
-  return document.createTextNode(x);
-};
-const childrenToNodes = (children) => children.flat(Infinity).flatMap((child) => {
-  if (!child[isReactive])
-    return [toNode(child)];
-  if (Array.isArray(child.value)) {
-    const liveFragment2 = new LiveFragment();
-    child.addReaction(() => {
-      liveFragment2.replaceChildren(...childrenToNodes(child.value));
-    });
-    return [liveFragment2.startMarker, ...childrenToNodes(child.value), liveFragment2.endMarker];
-  }
-  let node = toNode(child.value);
-  child.addReaction(() => {
-    const oldNode = node;
-    node = toNode(child.value);
-    oldNode.replaceWith(node);
-  });
-  return [node];
-});
-class MetaTextNode {
-  constructor(textContent) {
-    __publicField(this, _c, true);
-    __publicField(this, _d, true);
-    __publicField(this, "node");
-    if (!textContent[isReactive]) {
-      this.node = document.createTextNode(textContent);
-      return;
-    }
-    this.node = document.createTextNode(textContent.value);
-    textContent.addReaction(() => {
-      this.node.textContent = textContent.value;
-    });
-  }
-  addProperties(properties = {}) {
-    Object.assign(this.node, properties);
-    return this;
-  }
-}
-_c = isMetaNode, _d = isMetaElement;
-class MetaElement {
-  constructor(name, namespace) {
-    __publicField(this, _e, true);
-    __publicField(this, _f2, true);
-    __publicField(this, "node");
-    this.node = namespace ? document.createElementNS(namespace, name) : document.createElement(name);
-  }
-  static from(element) {
-    const result = new this("div");
-    result.node = element;
-    return result;
-  }
-  addProperties(properties = {}) {
-    Object.assign(this.node, properties);
-    return this;
-  }
-  addAttributes(attributes = {}) {
-    for (const name in attributes)
-      reactiveDo(attributes[name], maybeDo((value) => this.node.setAttribute(name, value), () => this.node.removeAttribute(name)));
-    return this;
-  }
-  addDataAttributes(dataAttributes = {}) {
-    for (const name in dataAttributes)
-      reactiveDo(dataAttributes[name], maybeDo((value) => this.node.dataset[name] = value, () => delete this.node.dataset[name]));
-    return this;
-  }
-  addStyles(styles = {}) {
-    for (const property in styles)
-      reactiveDo(styles[property], maybeDo((value) => this.node.style.setProperty(property, value), () => this.node.style.removeProperty(property)));
-    return this;
-  }
-  toggleClasses(classes = {}) {
-    for (const name in classes)
-      reactiveDo(classes[name], (value) => this.node.classList.toggle(name, value));
-    return this;
-  }
-  before(...xs) {
-    this.node.before(...childrenToNodes(xs));
-  }
-  prepend(...xs) {
-    this.node.prepend(...childrenToNodes(xs));
-  }
-  append(...xs) {
-    this.node.append(...childrenToNodes(xs));
-  }
-  after(...xs) {
-    this.node.after(...childrenToNodes(xs));
-  }
-  replaceChildren(...xs) {
-    this.node.replaceChildren(...childrenToNodes(xs));
-  }
-  replaceWith(...xs) {
-    this.node.replaceWith(...childrenToNodes(xs));
-  }
-}
-_e = isMetaNode, _f2 = isMetaElement;
-const hydrateTextNodes = () => {
-  const tagged = {};
-  const bruhTextNodes = document.getElementsByTagName("bruh-textnode");
-  for (const bruhTextNode of bruhTextNodes) {
-    const textNode = document.createTextNode(bruhTextNode.textContent);
-    if (bruhTextNode.dataset.tag)
-      tagged[bruhTextNode.dataset.tag] = textNode;
-    bruhTextNode.replaceWith(textNode);
-  }
-  return tagged;
-};
-const createMetaTextNode = (textContent) => new MetaTextNode(textContent);
-const createMetaElement = (name, namespace) => (...variadic) => {
-  const meta = new MetaElement(name, namespace);
-  if (!isMetaNodeChild(variadic[0])) {
-    const [attributes, ...children] = variadic;
-    meta.addAttributes(attributes);
-    meta.append(children);
-  } else {
-    meta.append(variadic);
-  }
-  return meta;
-};
-const createMetaElementJSX = (nameOrComponent, attributesOrProps, ...children) => {
-  if (typeof nameOrComponent == "string") {
-    const meta = new MetaElement(nameOrComponent);
-    meta.addAttributes(attributesOrProps || {});
-    meta.append(children);
-    return meta;
-  }
-  return nameOrComponent(Object.assign({}, attributesOrProps, { children }));
-};
-const JSXFragment = ({ children }) => children;
-var index_browser = /* @__PURE__ */ Object.freeze({
-  __proto__: null,
-  [Symbol.toStringTag]: "Module",
-  childrenToNodes,
-  MetaTextNode,
-  MetaElement,
-  hydrateTextNodes,
-  t: createMetaTextNode,
-  e: createMetaElement,
-  h: createMetaElementJSX,
-  JSXFragment
 });
 export { index_browser as dom, liveFragment, index$1 as reactive, index as util };
 //# sourceMappingURL=bruh.es.js.map
