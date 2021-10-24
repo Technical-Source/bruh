@@ -33,15 +33,11 @@ const isVoidElement = element =>
 
 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
 // https://html.spec.whatwg.org/multipage/syntax.html#cdata-rcdata-restrictions
-const escapeForTextNode = x =>
+// Does not work for https://html.spec.whatwg.org/multipage/syntax.html#raw-text-elements (script and style)
+const escapeForElement = x =>
   (x + "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-
-const escapeForElement = x =>
-  (x[isMetaNode] || x[isMetaRawString])
-    ? x.toString()
-    : escapeForTextNode(x)
 
 // https://html.spec.whatwg.org/multipage/syntax.html#syntax-attribute-value
 const escapeForDoubleQuotedAttribute = x =>
@@ -57,12 +53,6 @@ const attributesToString = attributes =>
         ? ` ${name}`
         : ` ${name}="${escapeForDoubleQuotedAttribute(value)}"`
     ).join("")
-
-const metaChildrenToString = children =>
-  children
-    .flat(Infinity)
-    .map(escapeForElement)
-    .join("")
 
 //#endregion
 
@@ -102,7 +92,7 @@ export class MetaTextNode {
       ? ` tag="${escapeForDoubleQuotedAttribute(this.tag)}"`
       : ""
     return `<bruh-textnode style="all:unset;display:inline"${tag}>${
-      escapeForTextNode(this.textContent)
+      escapeForElement(this.textContent)
     }</bruh-textnode>`
   }
 
@@ -133,7 +123,14 @@ export class MetaElement {
     if (isVoidElement(this.name))
       return startTag
 
-    const contents = metaChildrenToString(this.children)
+    const contents = this.children
+      .flat(Infinity)
+      .map(child =>
+        (child[isMetaNode] || child[isMetaRawString])
+          ? child.toString()
+          : escapeForElement(child)
+      )
+      .join("")
     // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
     const endTag = `</${this.name}>`
     return startTag + contents + endTag
@@ -270,10 +267,7 @@ export const h = (nameOrComponent, props, ...children) => {
   // It must be a component, then, as bruh components are just functions
   // Due to JSX, this would mean a function with only one parameter - props
   // This object includes the all of the normal props and a "children" key
-  return nameOrComponent({
-    ...attributesOrProps,
-    ...{ children }
-  })
+  return nameOrComponent({ ...props, children })
 }
 
 // The JSX fragment is made into a bruh fragment (just an array)

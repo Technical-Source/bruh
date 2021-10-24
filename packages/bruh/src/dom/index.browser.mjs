@@ -26,7 +26,7 @@ const toNode = x =>
 // Processes bruh children into an array of DOM nodes
 // Reactive values are automatically replaced, so the output must be placed into a parent node
 // before any top level (after flattening arrays) reactions run
-export const bruhChildrenToNodes = children =>
+export const bruhChildrenToNodes = (...children) =>
   children
     .flat(Infinity)
     .flatMap(child => {
@@ -38,9 +38,9 @@ export const bruhChildrenToNodes = children =>
       if (Array.isArray(child.value)) {
         const liveFragment = new LiveFragment()
         child.addReaction(() => {
-          liveFragment.replaceChildren(...bruhChildrenToNodes(child.value))
+          liveFragment.replaceChildren(...bruhChildrenToNodes(...child.value))
         })
-        return [liveFragment.startMarker, ...bruhChildrenToNodes(child.value), liveFragment.endMarker]
+        return [liveFragment.startMarker, ...bruhChildrenToNodes(...child.value), liveFragment.endMarker]
       }
 
       // Reactive values become auto-swapped DOM nodes
@@ -113,7 +113,7 @@ export const e = name => (...variadic) => {
   // If there are no props
   if (isBruhChild(variadic[0])) {
     const element = document.createElement(name)
-    element.append(...bruhChildrenToNodes(variadic))
+    element.append(...bruhChildrenToNodes(...variadic))
     return element
   }
 
@@ -143,7 +143,7 @@ export const e = name => (...variadic) => {
   applyAttributes(element, props)
 
   // Add the children to the element
-  element.append(...bruhChildrenToNodes(children))
+  element.append(...bruhChildrenToNodes(...children))
   return element
 }
 
@@ -165,10 +165,7 @@ export const h = (nameOrComponent, props, ...children) => {
   // It must be a component, then, as bruh components are just functions
   // Due to JSX, this would mean a function with only one parameter - props
   // This object includes the all of the normal props and a "children" key
-  return nameOrComponent({
-    ...attributesOrProps,
-    ...{ children }
-  })
+  return nameOrComponent({ ...props, children })
 }
 
 // The JSX fragment is made into a bruh fragment (just an array)
