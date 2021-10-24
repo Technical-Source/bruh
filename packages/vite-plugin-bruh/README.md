@@ -91,18 +91,6 @@ render files (`x.html.jsx`) and hydrate files (`x.jsx`, what vite typically hand
 
 ## Current Caveats
 
-If you want to use `import.meta.url`, vite will currently give a (non URL!) absolute path that is "relative" to your vite `root`.
-The easiest workaround is to just do something like this:
-```javascript
-import path from "path"
-
-// A path relative to where the `vite` command is run
-path.resolve("a/path/relative/to/the/vite/currentWorkingDirectory")
-
-// Instead of what you would expect to work
-new URL("a/path/relative/to/this/file", import.meta.url).pathname
-```
-
 For MDX support, there is a workaround that replaces (in mdx files) any `className` strings with `class`.
 You probably won't run into that problem before it is fixed in a more correct way, but it can be solved
 by just writing `"class" + "Name"`, `"class\u004eame"`, `class&#78;ame` or something similar.
