@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.9.1",
+  "version": "1.10.0",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -50,18 +50,10 @@
     "prepare": "npm run build"
   },
   "optionalDependencies": {
-    "cac": "^6.7.3",
-    "sharp": "^0.28.3"
+    "cac": "^6.7.11",
+    "sharp": "^0.29.2"
   },
   "devDependencies": {
-    "vite": "^2.5.10"
-  },
-  "browserslist": [
-    "ios_saf >= 12.4",
-    "and_chr >= 88",
-    "chrome  >= 87",
-    "safari  >= 13.1",
-    "edge    >= 87",
-    "firefox >= 84"
-  ]
+    "vite": "^2.6.10"
+  }
 }

@@ -1,15 +1,15 @@
 {
   "name": "create-bruh",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Quickly start working with bruh",
   "main": "./index.mjs",
   "bin": {
     "create-bruh": "./index.mjs"
   },
   "dependencies": {
-    "kleur": "^3.0.3",
+    "kleur": "^4.1.4",
     "node-fetch": "^3.0.0",
-    "prompts": "^2.4.1",
+    "prompts": "^2.4.2",
     "semver": "^7.3.5"
   },
   "scripts": {},
