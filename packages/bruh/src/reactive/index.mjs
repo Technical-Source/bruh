@@ -70,10 +70,12 @@ export class FunctionalReactive {
   }
 
   get value() {
-    // If there are any pending updates, go ahead and apply them first
+    // If there are any relevant pending updates, apply them first
     // It's ok that there's already a microtask queued for this
     if (FunctionalReactive.#settersQueue.size)
-      FunctionalReactive.applyUpdates()
+      // Heuristic quick check
+      if (this.#depth !== 0 || FunctionalReactive.#settersQueue.has(this))
+        FunctionalReactive.applyUpdates()
 
     return this.#value
   }

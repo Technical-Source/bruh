@@ -144,8 +144,10 @@ const _FunctionalReactive = class {
     x.forEach((d) => __privateGet(d, _derivatives).add(this));
   }
   get value() {
-    if (__privateGet(_FunctionalReactive, _settersQueue).size)
-      _FunctionalReactive.applyUpdates();
+    if (__privateGet(_FunctionalReactive, _settersQueue).size) {
+      if (__privateGet(this, _depth) !== 0 || __privateGet(_FunctionalReactive, _settersQueue).has(this))
+        _FunctionalReactive.applyUpdates();
+    }
     return __privateGet(this, _value2);
   }
   set value(newValue) {
