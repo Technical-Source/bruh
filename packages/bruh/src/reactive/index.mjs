@@ -70,12 +70,17 @@ export class FunctionalReactive {
   }
 
   get value() {
-    // If there are any relevant pending updates, apply them first
-    // It's ok that there's already a microtask queued for this
-    if (FunctionalReactive.#settersQueue.size)
-      // Heuristic quick check
-      if (this.#depth !== 0 || FunctionalReactive.#settersQueue.has(this))
+    // If there are any pending updates
+    if (FunctionalReactive.#settersQueue.size) {
+      // Heuristic quick invalidation for derived nodes
+      // Apply updates now, it's ok that there's already a microtask queued for this
+      if (this.#depth !== 0)
         FunctionalReactive.applyUpdates()
+      // If this is a source node that was updated, just return that
+      // new value without actually updating any derived nodes yet
+      else if (FunctionalReactive.#settersQueue.has(this))
+        return FunctionalReactive.#settersQueue.get(this)
+    }
 
     return this.#value
   }
