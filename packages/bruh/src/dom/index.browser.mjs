@@ -131,14 +131,25 @@ export const e = name => (...variadic) => {
       : document.createElement  (           name)
 
   // Apply overloaded props, if possible
-  if (typeof props.style === "object") {
+
+  // Inline style object
+  if (typeof props.style === "object" && !props.style[isReactive]) {
     applyStyles(element, props.style)
     delete props.style
   }
-  if (typeof props.class === "object") {
+  // Classes object
+  if (typeof props.class === "object" && !props.style[isReactive]) {
     applyClasses(element, props.class)
     delete props.class
   }
+  for (const name in props) {
+    // Event listener functions
+    if (name.startsWith("on") && typeof props[name] === "function") {
+      element.addEventListener(name.slice(2), props[name])
+      delete props[name]
+    }
+  }
+
   // The rest of the props are attributes
   applyAttributes(element, props)
 

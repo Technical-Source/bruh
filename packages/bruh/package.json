@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.10.2",
+  "version": "1.11.0",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -24,6 +24,7 @@
     "directory": "packages/bruh"
   },
   "type": "module",
+  "main": "./dist/bruh.umd.js",
   "exports": {
     "./": {
       "browser": "./dist/bruh.es.js",

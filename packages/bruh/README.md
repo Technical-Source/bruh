@@ -47,7 +47,7 @@ Along with modern build tooling integration ([vite](https://vitejs.dev)), you're
 <p>
   It looks like this, which is pretty epic:
 
-  <a href="https://codepen.io/pen/?template=eYEvQmy&editors=0010">
+  <a href="https://codepen.io/pen/?template=dyzRvZY&editors=0010">
     <img
       alt="Open in CodePen"
       align="right"
@@ -58,13 +58,15 @@ Along with modern build tooling integration ([vite](https://vitejs.dev)), you're
 
 ```jsx
 const Counter = () => {
-  const count = r(0) // A reactive value
+  // A reactive value
+  const count = r(0)
+  const increment = () => count.value++
+
+  // Declarative UI without vdom! (and build tools are completely optional)
   const counter =
-    <button class="counter">
+    <button class="counter" onclick={ increment }>
       Click to increment: { count }
     </button>
-
-  counter.addEventListener("click", () => count.value++)
 
   return counter
 }
