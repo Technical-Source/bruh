@@ -54,7 +54,7 @@ Along with modern build tooling integration ([vite](https://vitejs.dev)), you're
       src="https://img.shields.io/badge/Open_in_CodePen-blue?logo=codepen"
     >
   </a>
-</p>
+</p><br>
 
 ```jsx
 const Counter = () => {
@@ -94,7 +94,7 @@ document.body.append(
       src="https://img.shields.io/badge/Preview_the_template_in_CodeSandbox-blue?logo=codesandbox"
     >
   </a>
-</p>
+</p><br>
 
 # Where is the documentation?
 
