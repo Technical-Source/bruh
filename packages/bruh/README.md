@@ -16,6 +16,12 @@
         src="https://img.shields.io/npm/v/bruh"
       >
     </a>
+    <a href="https://www.npmjs.com/package/bruh">
+      <img
+        alt="Distributed download size for the entire library"
+        src="https://img.shields.io/bundlephobia/minzip/bruh"
+      >
+    </a>
     <a href="https://github.com/Technical-Source/bruh/discussions">
       <img
         alt="Github Discussions"
@@ -33,9 +39,6 @@ A js library for the web that places your control on a pedestal.
 It packs flexible SSR (Server-Side HTML Rendering),
 an awesome DOM interface,
 and elegant functional reactivity in a tiny code size.
-
-_As of version 1.10.2, its [browser-specific code](https://unpkg.com/bruh@1.10.2/dist/bruh.umd.js)
-is ~2.6kb minified+brotli with everything included and transpiled._
 
 Along with modern build tooling integration ([vite](https://vitejs.dev)), you're one step away from:
 - JSX and MDX (markdown with JSX instead of HTML) for both HTML rendering and DOM element creation
