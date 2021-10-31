@@ -2,9 +2,9 @@ export default async ({
   title = "",
   description = "",
   InHead = () => [],
-  InBody = () => [],
   css = [],
-  js = []
+  js = [],
+  children
 }) =>
   "<!doctype html>" +
   <html lang="en-US">
@@ -30,7 +30,5 @@ export default async ({
       <InHead />
     </head>
 
-    <body>
-      <InBody />
-    </body>
+    <body>{ children }</body>
   </html>

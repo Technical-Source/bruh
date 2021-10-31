@@ -1,0 +1,12 @@
+{
+  "name": "create-bruh-template-minimal",
+  "scripts": {
+    "dev": "serve"
+  },
+  "devDependencies": {
+    "serve": "^12.0.1"
+  },
+  "dependencies": {
+    "bruh": "^1.11.0"
+  }
+}
