@@ -39,6 +39,9 @@
     },
     "./reactive": "./src/reactive/index.mjs",
     "./reactive/remote": "./src/reactive/remote.mjs",
+    "./websocket": {
+      "browser": "./src/websocket/index.browser.mjs"
+    },
     "./util": "./src/util/index.mjs",
     "./components/*": "./src/components/*.mjs",
     "./media/images": {
