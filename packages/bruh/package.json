@@ -38,6 +38,7 @@
       "browser": "./src/dom/live-fragment.mjs"
     },
     "./reactive": "./src/reactive/index.mjs",
+    "./reactive/remote": "./src/reactive/remote.mjs",
     "./util": "./src/util/index.mjs",
     "./components/*": "./src/components/*.mjs",
     "./media/images": {
