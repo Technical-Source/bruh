@@ -1,0 +1,13 @@
+{
+  "name": "create-bruh-template-custom",
+  "scripts": {
+    "vite-dev": "vite serve ./frontend",
+    "dev": "node ./server.mjs"
+  },
+  "dependencies": {
+    "bruh": "^1.11.0",
+    "polka": "^1.0.0-next.22",
+    "sirv": "^1.0.19",
+    "ws": "^8.3.0"
+  }
+}

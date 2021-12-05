@@ -6,7 +6,10 @@ export const resolveURL = (url = "") => {
   const resolvedURL = new URL(url, location.href)
   // Handle implicitly selection of ws: or wss: based on the context
   if (resolvedURL.protocol !== "ws:" && resolvedURL.protocol !== "wss:")
-    resolvedURL.protocol = isSecureContext ? "wss:" : "ws:"
+    resolvedURL.protocol =
+      isSecureContext && resolvedURL.protocol !== "http:"
+        ? "wss:"
+        : "ws:"
   // Fragments aren't allowed in websocket urls
   resolvedURL.hash = ""
   return resolvedURL
@@ -25,7 +28,7 @@ export const connect = (
 
   // Every attempt makes a new socket, reattempting after a delay
   const attemptConnection = (delay = initialReconnectDelay) => {
-    socket = new WebSocket(resolvedURL)
+    const socket = new WebSocket(resolvedURL)
 
     // The reactive value is updated and the delay reset on success
     socket.addEventListener("open", () => {
@@ -44,42 +47,39 @@ export const connect = (
     })
   }
 
-  return new Promise(resolve => {
-    // Only resolve on the first connection
-    const stop = reactiveSocket.addReaction(() => {
-      resolve(reactiveSocket.value)
-      stop()
-    })
-    // kickoff
-    attemptConnection()
-  })
+  // kickoff
+  attemptConnection()
+
+  return reactiveSocket
 }
 
 // Handle automatic JSON over websockets, where the websocket can be reactive
-export const manageWebSocket = (maybeReactiveSocket, handleType = {}, handleRaw) => {
+export const handleSocket = (maybeReactiveSocket, handlers) => {
   let currentSocket
 
   // Account for a potentially reactive socket
   reactiveDo(maybeReactiveSocket, socket => {
+    if (!socket) return
+
     currentSocket = socket
 
     // Handle messages, parsing strings as JSON
     socket.addEventListener("message", ({ data }) => {
       // Raw blob/arraybuffer (socket.binaryType, defaults to blob)
       if (typeof data !== "string")
-        handleRaw?.(data)
+        handlers.raw?.(data)
       // assume strings are JSON with {"type":"messageType"}
       else {
         const parsed = JSON.parse(data)
-        if (handleType.hasOwnProperty(parsed.type))
-          handleType[parsed.type](parsed)
+        if (handlers.byType.hasOwnProperty(parsed.type))
+          handlers.byType[parsed.type](parsed)
       }
     })
   })
 
   // A send function that automatically converts objects to JSON
   return data =>
-    currentSocket.send(
+    currentSocket?.send(
       data instanceof Blob || data instanceof ArrayBuffer || ArrayBuffer.isView(data)
         ? data
         : JSON.stringify(data)

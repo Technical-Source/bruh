@@ -38,7 +38,6 @@
       "browser": "./src/dom/live-fragment.mjs"
     },
     "./reactive": "./src/reactive/index.mjs",
-    "./reactive/remote": "./src/reactive/remote.mjs",
     "./websocket": {
       "browser": "./src/websocket/index.browser.mjs"
     },
@@ -46,6 +45,12 @@
     "./components/*": "./src/components/*.mjs",
     "./media/images": {
       "node": "./src/media/images.mjs"
+    },
+    "./hydrate/websocket": {
+      "browser": "./src/hydrate/websocket.mjs"
+    },
+    "./hydrate/reactive": {
+      "browser": "./src/hydrate/reactive.mjs"
     }
   },
   "bin": {
