@@ -28,8 +28,7 @@ const findPort = async (fromPort = 5000, attempts = 10) => {
 const app = polka()
   .use(
     sirv("./frontend", {
-      dev: true,
-
+      dev: true
     })
   )
 

@@ -34,7 +34,7 @@ const remoteReactives =
   })
 
 
-handlers.byType.setReactive = (id, value) => {
+handlers.byType.setReactive = ({ id, value }) => {
   remoteReactives[id].value = value
 }
 
