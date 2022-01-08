@@ -125,6 +125,7 @@ export class MetaElement {
 
     const contents = this.children
       .flat(Infinity)
+      .filter(x => typeof x !== "boolean" && x !== undefined && x !== null)
       .map(child =>
         (child[isMetaNode] || child[isMetaRawString])
           ? child.toString()

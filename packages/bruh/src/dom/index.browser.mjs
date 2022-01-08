@@ -18,10 +18,17 @@ const isBruhChild = x =>
   // Everything else can be a child when stringified
 
 // Coerces input into a DOM node, if it isn't already one
-const toNode = x =>
-  x instanceof Node
-    ? x
-    : document.createTextNode(x)
+const toNode = x => {
+  // Existing DOM nodes are untouched
+  if (x instanceof Node)
+    return x
+  // booleans and nullish are ignored
+  else if (typeof x === "boolean" || x === undefined || x === null)
+    return document.createComment(x)
+  // Anything else is treated as text
+  else
+    return document.createTextNode(x)
+}
 
 // Processes bruh children into an array of DOM nodes
 // Reactive values are automatically replaced, so the output must be placed into a parent node
@@ -31,7 +38,7 @@ export const bruhChildrenToNodes = (...children) =>
     .flat(Infinity)
     .flatMap(child => {
       // Non-reactive values are untouched
-      if (!child[isReactive])
+      if (!child?.[isReactive])
         return [toNode(child)]
 
       // Reactive arrays become live fragments with auto-swapped children
@@ -138,7 +145,7 @@ export const e = name => (...variadic) => {
     delete props.style
   }
   // Classes object
-  if (typeof props.class === "object" && !props.style[isReactive]) {
+  if (typeof props.class === "object" && !props.class[isReactive]) {
     applyClasses(element, props.class)
     delete props.class
   }
