@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.12.0",
+  "version": "1.12.1",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -31,7 +31,7 @@
       "default": "./dist/bruh.umd.js"
     },
     "./dom": {
-      "node": "./src/dom/index.node.mjs",
+      "node": "./src/dom/index.server.mjs",
       "browser": "./src/dom/index.browser.mjs"
     },
     "./dom/live-fragment": {
@@ -41,7 +41,7 @@
     "./util": "./src/util/index.mjs",
     "./components/*": "./src/components/*.mjs",
     "./media/images": {
-      "node": "./src/media/images.mjs"
+      "node": "./src/media/images.node.mjs"
     }
   },
   "bin": {
