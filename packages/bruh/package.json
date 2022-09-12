@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.13.0",
+  "version": "1.13.1",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -45,6 +45,10 @@
   "bin": {
     "bruh": "./src/cli/index.mjs"
   },
+  "files": [
+    "./src/",
+    "./dist/"
+  ],
   "scripts": {
     "build": "vite build",
     "prepare": "npm run build"
