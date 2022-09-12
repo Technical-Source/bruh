@@ -6,11 +6,11 @@
     "serve": "vite preview"
   },
   "devDependencies": {
-    "postcss-preset-env": "^6.7.0",
-    "vite": "^2.6.13",
+    "postcss-preset-env": "^7.8.1",
+    "vite": "^3.1.0",
     "vite-plugin-bruh": "^0.6.0"
   },
   "dependencies": {
-    "bruh": "^1.11.0"
+    "bruh": "^1.13.0"
   }
 }

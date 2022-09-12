@@ -1,4 +1,3 @@
-import { LiveFragment } from "./live-fragment.mjs"
 import { isReactive, reactiveDo } from "../reactive/index.mjs"
 
 //#region Bruh child functions e.g. bruhChildrenToNodes()
@@ -18,7 +17,7 @@ const isBruhChild = x =>
   // Everything else can be a child when stringified
 
 // Coerces input into a DOM node, if it isn't already one
-const toNode = x => {
+const unreactiveChildToNode = x => {
   // Existing DOM nodes are untouched
   if (x instanceof Node)
     return x
@@ -30,34 +29,90 @@ const toNode = x => {
     return document.createTextNode(x)
 }
 
+// Auto-swapping single reactive node
+const reactiveChildToNode = child => {
+  let node = unreactiveChildToNode(child.value)
+
+  const stopReacting = child.addReaction(() => {
+    // Stop swapping if no longer possible
+    if (!node.parentNode) {
+      stopReacting()
+      return
+    }
+
+    // Normal swap
+    if (!Array.isArray(child.value)) {
+      const oldNode = node
+      node = unreactiveChildToNode(child.value)
+      oldNode.replaceWith(node)
+    }
+    // If an array now, stop swapping, then switch to reactive array swapping
+    else {
+      stopReacting()
+      node.replaceWith(...reactiveArrayChildToNodes(child))
+    }
+  })
+
+  return node
+}
+
+// Auto-swapping reactive array of nodes
+const reactiveArrayChildToNodes = child => {
+  // Markers owned by the swapper here itself, so that
+  // the values in the array can be swapped separately
+  const first = document.createComment("[")
+  const last  = document.createComment("]")
+
+  const stopReacting = child.addReaction(() => {
+    // Stop swapping if there is no parent to swap within
+    if (!first.parentNode) {
+      stopReacting()
+      return
+    }
+
+    // Make a range starting after the first marker
+    const range = document.createRange()
+    range.setStartAfter(first)
+
+    // Normal swap, replacing content between the first and last markers
+    if (Array.isArray(child.value)) {
+      range.setEndBefore(last)
+      range.deleteContents()
+      first.after(...bruhChildrenToNodes(child.value))
+    }
+    // Switch to single swapping node by replacing everything
+    else {
+      stopReacting()
+      range.setEndAfter(last)
+      range.deleteContents()
+      first.replaceWith(reactiveChildToNode(child))
+    }
+  })
+
+  return [
+    first,
+    ...bruhChildrenToNodes(child.value),
+    last
+  ]
+}
+
 // Processes bruh children into an array of DOM nodes
 // Reactive values are automatically replaced, so the output must be placed into a parent node
 // before any top level (after flattening arrays) reactions run
-export const bruhChildrenToNodes = (...children) =>
+export const bruhChildrenToNodes = children =>
   children
     .flat(Infinity)
     .flatMap(child => {
-      // Non-reactive values are untouched
+      // Non-reactive child
       if (!child?.[isReactive])
-        return [toNode(child)]
+        return [unreactiveChildToNode(child)]
 
-      // Reactive arrays become live fragments with auto-swapped children
-      if (Array.isArray(child.value)) {
-        const liveFragment = new LiveFragment()
-        child.addReaction(() => {
-          liveFragment.replaceChildren(...bruhChildrenToNodes(...child.value))
-        })
-        return [liveFragment.startMarker, ...bruhChildrenToNodes(...child.value), liveFragment.endMarker]
-      }
+      // Single reactive value
+      if (!Array.isArray(child.value))
+        return [reactiveChildToNode(child)]
 
-      // Reactive values become auto-swapped DOM nodes
-      let node = toNode(child.value)
-      child.addReaction(() => {
-        const oldNode = node
-        node = toNode(child.value)
-        oldNode.replaceWith(node)
-      })
-      return [node]
+      // Reactive array
+      return reactiveArrayChildToNodes(child)
     })
 
 //#endregion
@@ -117,10 +172,13 @@ export const t = textContent => {
 
 // Elements
 export const e = name => (...variadic) => {
+  if (variadic.length === 0)
+    return document.createElement(name)
+
   // If there are no props
   if (isBruhChild(variadic[0])) {
     const element = document.createElement(name)
-    element.append(...bruhChildrenToNodes(...variadic))
+    element.append(...bruhChildrenToNodes(variadic))
     return element
   }
 
@@ -161,7 +219,7 @@ export const e = name => (...variadic) => {
   applyAttributes(element, props)
 
   // Add the children to the element
-  element.append(...bruhChildrenToNodes(...children))
+  element.append(...bruhChildrenToNodes(children))
   return element
 }
 

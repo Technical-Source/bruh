@@ -4,9 +4,9 @@
     "dev": "serve"
   },
   "devDependencies": {
-    "serve": "^12.0.1"
+    "serve": "^14.0.1"
   },
   "dependencies": {
-    "bruh": "^1.11.0"
+    "bruh": "^1.13.0"
   }
 }

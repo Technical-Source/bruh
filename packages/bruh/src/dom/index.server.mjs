@@ -221,6 +221,9 @@ export const t = textContent =>
 export const e = name => (...variadic) => {
   const element = new MetaElement(name)
 
+  if (variadic.length === 0)
+    return element
+
   // If there are no props
   if (isMetaChild(variadic[0])) {
     element.children.push(...variadic)
