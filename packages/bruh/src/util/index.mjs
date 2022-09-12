@@ -4,6 +4,7 @@ export const pipe = (x, ...fs) =>
 
 // Dispatch a custom event to (capturing) and from (bubbling) a target (usually a DOM node)
 // Returns false if the event was cancelled (preventDefault()) and true otherwise
+// Note that this is synchronous
 export const dispatch = (target, type, options) =>
   target.dispatchEvent(
     // Default to behave like most DOM events
