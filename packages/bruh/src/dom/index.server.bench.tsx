@@ -1,3 +1,4 @@
+/** @jsxImportSource bruh/server */
 import { describe, bench } from "vitest"
 import {
   applyStyles,
@@ -5,10 +6,8 @@ import {
   applyAttributes,
   rawString,
   t,
-  h, // @jsx h
-  JSXFragment, // @jsxFrag JSXFragment
   MetaDocument
-} from "./index.server.mjs"
+} from "./index.server.mts"
 import { Readable } from 'node:stream'
 
 describe("Server DOM", () => {
@@ -98,7 +97,7 @@ describe("Server DOM", () => {
           <section class="cta-section">
             <h2>Join Our Newsletter</h2>
             <form class="newsletter-form" action="/subscribe" method="POST">
-              <label htmlFor="email">Email Address:</label>
+              <label for="email">Email Address:</label>
               <input
                 type="email"
                 id="email"
@@ -165,6 +164,7 @@ describe("Server DOM", () => {
     describe("Stream", () => {
       bench("ReadableStream.from() with TextEncoderStream", async () => {
         const stream =
+          // @ts-ignore
           ReadableStream.from(document)
             .pipeThrough(new TextEncoderStream())
 
@@ -174,6 +174,7 @@ describe("Server DOM", () => {
       bench("Document toStream()", async () => {
         const stream = document.toStream()
 
+        // @ts-ignore
         for await (const _ of stream) {}
       })
 

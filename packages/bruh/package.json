@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.13.2",
+  "version": "1.14.0",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -24,45 +24,97 @@
     "directory": "packages/bruh"
   },
   "type": "module",
-  "main": "./dist/bruh.umd.js",
   "sideEffects": false,
   "exports": {
-    ".": {
-      "browser": "./dist/bruh.es.js",
-      "default": "./dist/bruh.umd.js"
+    "./browser": {
+      "types": "./dist/types/dom/index.browser.d.mts",
+      "default": "./dist/browser.mjs"
     },
-    "./dom": {
-      "node": "./src/dom/index.server.mjs",
-      "browser": "./src/dom/index.browser.mjs"
+    "./browser/jsx-runtime": {
+      "types": "./dist/types/dom/browser/jsx-runtime.d.mts",
+      "default": "./dist/browser/jsx-runtime.mjs"
     },
-    "./reactive": "./src/reactive/index.mjs",
-    "./util": "./src/util/index.mjs",
-    "./components/*": "./src/components/*.mjs",
+    "./browser/jsx-dev-runtime": {
+      "types": "./dist/types/dom/browser/jsx-runtime.d.mts",
+      "default": "./dist/browser/jsx-runtime.mjs"
+    },
+    "./server": {
+      "types": "./dist/types/dom/index.server.d.mts",
+      "default": "./dist/server.mjs"
+    },
+    "./server/jsx-runtime": {
+      "types": "./dist/types/dom/server/jsx-runtime.d.mts",
+      "default": "./dist/server/jsx-runtime.mjs"
+    },
+    "./server/jsx-dev-runtime": {
+      "types": "./dist/types/dom/server/jsx-runtime.d.mts",
+      "default": "./dist/server/jsx-runtime.mjs"
+    },
+    "./reactive": {
+      "types": "./dist/types/reactive/index.d.mts",
+      "default": "./dist/reactive.mjs"
+    },
+    "./utils": {
+      "types": "./dist/types/utils/index.d.mts",
+      "default": "./dist/utils.mjs"
+    },
+    "./cli": {
+      "node": {
+        "types": "./dist/types/cli/index.d.mts",
+        "default": "./dist/cli/node.mjs"
+      }
+    },
     "./media/images": {
-      "node": "./src/media/images.node.mjs"
+      "node": {
+        "types": "./dist/types/media/images.node.d.mts",
+        "default": "./dist/media/images/node.mjs"
+      }
+    },
+    "./components/optimized-picture/server": {
+      "types": "./dist/types/components/optimized-picture/server.d.ts",
+      "default": "./dist/components/optimized-picture/server.mjs"
+    },
+    "./components/optimized-picture/hydrate": {
+      "types": "./dist/types/components/optimized-picture/hydrate.d.mts",
+      "default": "./dist/components/optimized-picture/hydrate.mjs"
+    },
+    "./polyfills/weakref": {
+      "types": "./dist/types/polyfills/weakref.d.mts",
+      "default": "./dist/polyfills/weakref.mjs"
     }
   },
   "bin": {
     "bruh": "./src/cli/index.mjs"
   },
   "files": [
-    "./src/",
     "./dist/"
   ],
   "scripts": {
     "build": "vite build",
     "prepare": "npm run build",
     "test": "vitest",
-    "coverage": "vitest run --coverage",
-    "bench": "vitest bench"
+    "typecheck": "tsc --noEmit",
+    "bench": "vitest bench",
+    "ts-trace": "tsc --noEmit --incremental false --generateTrace ./ts-trace/",
+    "ts-trace-analyze": "analyze-trace ./ts-trace/"
+  },
+  "dependencies": {
+    "csstype": "^3.1.3",
+    "html-info": "^0.0.8"
   },
   "optionalDependencies": {
     "cac": "^6.7.14",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^2.1.8",
-    "vite": "^6.0.2",
-    "vitest": "^2.1.8"
+    "@typescript/analyze-trace": "^0.10.1",
+    "@vitest/browser": "^3.1.3",
+    "playwright": "^1.52.0",
+    "rollup-plugin-node-externals": "^8.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.1.3"
   }
 }

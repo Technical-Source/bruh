@@ -1,20 +1,21 @@
 import { describe, test, expect, vi } from "vitest"
 import {
+  isReactiveSymbol,
   isReactive,
   SimpleReactive,
   FunctionalReactive,
   r,
   reactiveDo
-} from "./index.mjs"
+} from "./index.mts"
 
 describe("Reactive", () => {
   describe("isReactive symbol", () => {
     test("SimpleReactive", () => {
-      expect(new SimpleReactive()[isReactive]).toBeTruthy()
+      expect(new SimpleReactive(undefined)[isReactiveSymbol]).toBeTruthy()
     })
 
     test("FunctionalReactive", () => {
-      expect(new FunctionalReactive()[isReactive]).toBeTruthy()
+      expect(new FunctionalReactive(undefined)[isReactiveSymbol]).toBeTruthy()
     })
   })
 
@@ -48,7 +49,7 @@ describe("Reactive", () => {
   describe("update and read", () => {
     test("simple", () => {
       const symbol = Symbol()
-      const reactive = new SimpleReactive()
+      const reactive = new SimpleReactive<typeof symbol | undefined>(undefined)
       reactive.value = symbol
       expect(reactive.value).toBe(symbol)
     })
@@ -87,7 +88,7 @@ describe("Reactive", () => {
   describe("update and react", () => {
     test("simple", () => {
       const symbol = Symbol()
-      const reactive = new SimpleReactive()
+      const reactive = new SimpleReactive<typeof symbol | undefined>(undefined)
       const reaction = vi.fn(() => {
         expect(reactive.value).toBe(symbol)
       })
@@ -259,7 +260,7 @@ describe("Reactive", () => {
   describe("remove reaction", () => {
     test("simple", () => {
       const symbol = Symbol()
-      const reactive = new SimpleReactive()
+      const reactive = new SimpleReactive<Symbol | undefined>(undefined)
       const reaction = vi.fn(() => {
         expect(reactive.value).toBe(symbol)
       })
@@ -346,7 +347,7 @@ describe("Reactive", () => {
   describe("catches exceptions", () => {
     describe("throwing reaction", () => {
       test("simple", () => {
-        const reactive = new SimpleReactive()
+        const reactive = new SimpleReactive<number | undefined>(undefined)
         const reaction1 = vi.fn(() => {
           throw undefined
         })
@@ -365,7 +366,7 @@ describe("Reactive", () => {
       })
 
       test("functional", () => {
-        const reactive = r()
+        const reactive = r<number>()
         const reaction1 = vi.fn(() => {
           throw undefined
         })

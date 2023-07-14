@@ -1,5 +1,5 @@
-export default (className = "bruh-optimized-picture") =>
-  document.querySelectorAll(`.${className} > img`)
+const hydrateOptimizedPictures = (className = "bruh-optimized-picture") =>
+  document.querySelectorAll<HTMLImageElement>(`.${className} > img`)
     .forEach(img => {
       const removeLQIP = () => img.removeAttribute("style")
 
@@ -8,3 +8,5 @@ export default (className = "bruh-optimized-picture") =>
       else
         img.addEventListener("load", removeLQIP, { once: true })
     })
+
+export default hydrateOptimizedPictures

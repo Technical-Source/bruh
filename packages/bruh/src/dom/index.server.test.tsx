@@ -1,38 +1,44 @@
+/** @jsxImportSource bruh/server */
 import { describe, test, expect, vi, bench } from "vitest"
 import {
-  isMetaNode,
-  isMetaTextNode,
-  isMetaElement,
-  isMetaRawString,
   applyStyles,
   applyClasses,
   applyAttributes,
   rawString,
   t,
-  h, // @jsx h
-  JSXFragment, // @jsxFrag JSXFragment
   replaceDeferredScriptContent,
   replaceDeferredHash,
   MetaDocument
-} from "./index.server.mjs"
+} from "./index.server.mts"
 
 describe("Server DOM", () => {
-  test("JSX Fragment is array", () => {
+  test("JSX Fragment with single child is child", () => {
+    const a = <a />
+    expect(<>test</>).toEqual("test")
+    expect(<>{ a }</>).toEqual(a)
+  })
+
+  test("JSX Fragment with multiple children is children array", () => {
     const a = <a />
     const b = <b />
-    expect(<>{ a }</>).toEqual([a])
     expect(<>{ a }{ b }</>).toEqual([a, b])
     expect(<>{ "a" }b{ "c" }</>).toEqual(["a", "b", "c"])
   })
 
   test("JSX components are functions", () => {
     const symbol = Symbol()
-    const F = x => x
+    const F = (x: unknown) => x
     expect(
       <F key={symbol}>{symbol}</F>
     ).toEqual({
       key: symbol,
-      children: [symbol]
+      children: symbol
+    })
+    expect(
+      <F key={symbol}>{symbol} {symbol}</F>
+    ).toEqual({
+      key: symbol,
+      children: [symbol, " ", symbol]
     })
   })
 
@@ -101,7 +107,7 @@ describe("Server DOM", () => {
 
   describe("replaceDeferredScript", () => {
     test("hash matches", async () => {
-      const hashText = async text => {
+      const hashText = async (text: string) => {
         const buffer = await crypto.subtle.digest(
           "sha-512",
           new TextEncoder().encode(text)
