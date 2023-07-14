@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "1.13.1",
+  "version": "1.14.0",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -30,16 +30,6 @@
     ".": {
       "browser": "./dist/bruh.es.js",
       "default": "./dist/bruh.umd.js"
-    },
-    "./dom": {
-      "node": "./src/dom/index.server.mjs",
-      "browser": "./src/dom/index.browser.mjs"
-    },
-    "./reactive": "./src/reactive/index.mjs",
-    "./util": "./src/util/index.mjs",
-    "./components/*": "./src/components/*.mjs",
-    "./media/images": {
-      "node": "./src/media/images.node.mjs"
     }
   },
   "bin": {
@@ -50,8 +40,7 @@
     "./dist/"
   ],
   "scripts": {
-    "build": "vite build",
-    "prepare": "npm run build"
+    "build": "vite build"
   },
   "optionalDependencies": {
     "cac": "^6.7.14",
@@ -59,5 +48,9 @@
   },
   "devDependencies": {
     "vite": "^3.1.0"
+  },
+  "dependencies": {
+    "csstype": "^3.1.1",
+    "html-info": "^0.0.5"
   }
 }

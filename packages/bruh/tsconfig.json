@@ -1,0 +1,23 @@
+{
+  "include": ["./src/**/*"],
+  "exclude": ["./dist/**/*"],
+
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "JSXFragment",
+
+    "allowJs": true,
+
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "isolatedModules": true,
+
+    "declaration": true,
+    "emitDeclarationOnly": true
+  }
+}

@@ -1,3 +1,5 @@
+import { ElementToAttributes, HTMLNamespace, LikelyAsString, Namespace } from "./shared.mjs"
+
 const isMetaNode      = Symbol.for("bruh meta node")
 const isMetaTextNode  = Symbol.for("bruh meta text node")
 const isMetaElement   = Symbol.for("bruh meta element")
@@ -28,48 +30,38 @@ const voidElements = [
   "input"
 ]
 
-const isVoidElement = element =>
+const isVoidElement = (element: string) =>
   voidElements.includes(element)
 
 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
 // https://html.spec.whatwg.org/multipage/syntax.html#cdata-rcdata-restrictions
 // Does not work for https://html.spec.whatwg.org/multipage/syntax.html#raw-text-elements (script and style)
-const escapeForElement = x =>
+const escapeForElement = (x: LikelyAsString) =>
   (x + "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
 
 // https://html.spec.whatwg.org/multipage/syntax.html#syntax-attribute-value
-const escapeForDoubleQuotedAttribute = x =>
+const escapeForDoubleQuotedAttribute = (x: LikelyAsString) =>
   (x + "")
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
 
 // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-const attributesToString = attributes =>
+const attributesToString = <
+  Name extends string,
+  NS   extends Namespace = HTMLNamespace
+>(
+  attributes: Partial<ElementToAttributes<Name, NS>>
+) =>
   Object.entries(attributes)
     .map(([name, value]) =>
       value === ""
         ? ` ${name}`
-        : ` ${name}="${escapeForDoubleQuotedAttribute(value)}"`
+        : ` ${name}="${escapeForDoubleQuotedAttribute(value as LikelyAsString)}"`
     ).join("")
 
 //#endregion
-
-// A basic check for if a value is allowed as a meta node's child
-// It's responsible for quickly checking the type, not deep validation
-const isMetaChild = x =>
-  // meta nodes, reactives, and DOM nodes
-  x?.[isMetaNode] ||
-  x?.[isMetaRawString] ||
-  // Any array, just assume it contains valid children
-  Array.isArray(x) ||
-  // Allow nullish
-  x == null ||
-  // Disallow functions and objects
-  !(typeof x === "function" || typeof x === "object")
-  // Everything else can be a child when stringified
-
 
 //#region Meta Nodes that act like lightweight rendering-oriented DOM nodes
 
@@ -80,10 +72,10 @@ export class MetaTextNode {
   [isMetaNode]     = true;
   [isMetaTextNode] = true
 
-  textContent
-  tag
+  textContent: LikelyAsString
+  tag: string
 
-  constructor(textContent) {
+  constructor(textContent: LikelyAsString) {
     this.textContent = textContent
   }
 
@@ -96,7 +88,7 @@ export class MetaTextNode {
     }</bruh-textnode>`
   }
 
-  setTag(tag) {
+  setTag(tag: string) {
     this.tag = tag
 
     return this
@@ -104,15 +96,18 @@ export class MetaTextNode {
 }
 
 // A light model of an element
-export class MetaElement {
+export class MetaElement<
+  Name extends string,
+  NS   extends Namespace = HTMLNamespace
+> {
   [isMetaNode]    = true;
   [isMetaElement] = true
 
-  name
-  attributes = {}
+  name: Name
+  attributes: Partial<ElementToAttributes<Name, NS>> = {}
   children = []
 
-  constructor(name) {
+  constructor(name: Name) {
     this.name = name
   }
 
@@ -125,7 +120,7 @@ export class MetaElement {
 
     const contents = this.children
       .flat(Infinity)
-      .filter(x => typeof x !== "boolean" && x !== undefined && x !== null)
+      .filter(x => x != null && typeof x !== "boolean")
       .map(child =>
         (child[isMetaNode] || child[isMetaRawString])
           ? child.toString()
