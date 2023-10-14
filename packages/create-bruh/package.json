@@ -1,16 +1,15 @@
 {
   "name": "create-bruh",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Quickly start working with bruh",
   "main": "./index.mjs",
   "bin": {
     "create-bruh": "./index.mjs"
   },
   "dependencies": {
-    "kleur": "^4.1.4",
-    "node-fetch": "^3.0.0",
+    "kleur": "^4.1.5",
     "prompts": "^2.4.2",
-    "semver": "^7.3.5"
+    "semver": "^7.5.4"
   },
   "scripts": {},
   "homepage": "https://github.com/Technical-Source/bruh/tree/main/packages/create-bruh#readme",

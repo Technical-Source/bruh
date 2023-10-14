@@ -21,7 +21,7 @@ export class SimpleReactive {
 
     this.#value = newValue
     for (const reaction of this.#reactions)
-      reaction()
+      try { reaction() } catch {}
   }
 
   addReaction(reaction) {
@@ -62,9 +62,14 @@ export class FunctionalReactive {
       return
     }
 
-    this.#value = f()
+    try {
+      this.#value = f()
+    }
+    catch (e) {
+      this.#value = e
+    }
     this.#f = f
-    this.#depth = Math.max(...x.map(d => d.#depth)) + 1
+    this.#depth = Math.max(0, ...x.map(d => d.#depth)) + 1
 
     x.forEach(d => d.#derivatives.add(this))
   }
@@ -89,6 +94,11 @@ export class FunctionalReactive {
     // Only allow source nodes to be directly updated
     if (this.#depth !== 0)
       return
+
+    if (newValue === this.#value) {
+      FunctionalReactive.#settersQueue.delete(this)
+      return
+    }
 
     // Unless asked for earlier, these updates are just queued up until the microtasks run
     if (!FunctionalReactive.#settersQueue.size)
@@ -136,12 +146,17 @@ export class FunctionalReactive {
     // Note that both the queue (Array) and each depth Set iterators update as items are added
     for (const depthSet of FunctionalReactive.#derivativesQueue) if (depthSet)
       for (const derivative of depthSet)
-        derivative.#applyUpdate(derivative.#f())
+        try {
+          derivative.#applyUpdate(derivative.#f())
+        }
+        catch (e) {
+          derivative.#applyUpdate(e)
+        }
     FunctionalReactive.#derivativesQueue.length = 0
 
     // Call all reactions now that the graph has a fully consistent state
     for (const reaction of FunctionalReactive.#reactionsQueue)
-      reaction()
+      try { reaction() } catch {}
     FunctionalReactive.#reactionsQueue.length = 0
   }
 }
