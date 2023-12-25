@@ -1,12 +1,14 @@
-const isMetaNode      = Symbol.for("bruh meta node")
-const isMetaTextNode  = Symbol.for("bruh meta text node")
-const isMetaElement   = Symbol.for("bruh meta element")
-const isMetaRawString = Symbol.for("bruh meta raw string")
+import { makePromiseQueue } from "../util/index.mjs"
+
+export const isMetaNode      = Symbol.for("bruh meta node")
+export const isMetaTextNode  = Symbol.for("bruh meta text node")
+export const isMetaElement   = Symbol.for("bruh meta element")
+export const isMetaRawString = Symbol.for("bruh meta raw string")
 
 //#region HTML syntax functions
 
 // https://html.spec.whatwg.org/multipage/syntax.html#void-elements
-const voidElements = [
+const voidElements = new Set([
   "base",
   "link",
   "meta",
@@ -26,10 +28,10 @@ const voidElements = [
   "col",
 
   "input"
-]
+])
 
 const isVoidElement = element =>
-  voidElements.includes(element)
+  voidElements.has(element)
 
 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
 // https://html.spec.whatwg.org/multipage/syntax.html#cdata-rcdata-restrictions
@@ -46,22 +48,41 @@ const escapeForDoubleQuotedAttribute = x =>
     .replace(/"/g, "&quot;")
 
 // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-const attributesToString = attributes =>
-  Object.entries(attributes)
-    .map(([name, value]) =>
-      value === ""
-        ? ` ${name}`
-        : ` ${name}="${escapeForDoubleQuotedAttribute(value)}"`
-    ).join("")
+function * attributesToIterator(attributes) {
+  for (const name in attributes) {
+    const value = attributes[name]
+
+    if (value instanceof Promise) {
+      yield value
+        .then(resolved => attributesToIterator({ [name]: resolved }))
+        .catch(rejected => {
+          console.error(rejected)
+          return
+        })
+      continue
+    }
+
+    if (value == null || value === false)
+      continue
+
+    yield ` ${name}`
+
+    if (value === true || value === "")
+      continue
+
+    yield `="${escapeForDoubleQuotedAttribute(value)}"`
+  }
+}
 
 //#endregion
 
 // A basic check for if a value is allowed as a meta node's child
 // It's responsible for quickly checking the type, not deep validation
 const isMetaChild = x =>
-  // meta nodes, reactives, and DOM nodes
+  // meta nodes, raw strings, and promises
   x?.[isMetaNode] ||
   x?.[isMetaRawString] ||
+  x instanceof Promise ||
   // Any array, just assume it contains valid children
   Array.isArray(x) ||
   // Allow nullish
@@ -70,6 +91,24 @@ const isMetaChild = x =>
   !(typeof x === "function" || typeof x === "object")
   // Everything else can be a child when stringified
 
+class StreamableContent {
+  async * [Symbol.asyncIterator]() {
+    for await (const content of this[Symbol.iterator]()) {
+      if (content == null)
+        continue
+      else if (content[Symbol.asyncIterator])
+        yield* content[Symbol.asyncIterator]()
+      else if (content[Symbol.iterator])
+        yield* content[Symbol.iterator]()
+      else
+        yield content
+    }
+  }
+
+  toString({ promise }) {
+
+  }
+}
 
 //#region Meta Nodes that act like lightweight rendering-oriented DOM nodes
 
@@ -87,13 +126,26 @@ export class MetaTextNode {
     this.textContent = textContent
   }
 
+  * [Symbol.iterator]() {
+    yield `<bruh-textnode style="all:unset;display:inline"`
+    if (this.tag)
+      yield* attributesToIterator({ tag: this.tag })
+    yield ">"
+    if (this.textContent instanceof Promise) {
+      yield this.textContent
+        .then(escapeForElement)
+        .catch(rejected => {
+          console.error(rejected)
+          return
+        })
+    }
+    else
+      yield escapeForElement(this.textContent)
+    yield "</bruh-textnode>"
+  }
+
   toString() {
-    const tag = this.tag
-      ? ` tag="${escapeForDoubleQuotedAttribute(this.tag)}"`
-      : ""
-    return `<bruh-textnode style="all:unset;display:inline"${tag}>${
-      escapeForElement(this.textContent)
-    }</bruh-textnode>`
+    return [...this].join("")
   }
 
   setTag(tag) {
@@ -116,25 +168,37 @@ export class MetaElement {
     this.name = name
   }
 
-  toString() {
-    const attributes = attributesToString(this.attributes)
+  * content({ promise }) {
     // https://html.spec.whatwg.org/multipage/syntax.html#syntax-start-tag
-    const startTag = `<${this.name}${attributes}>`
+    yield `<${this.name}`
+    yield* attributesToIterator(this.attributes)
+    yield ">"
     if (isVoidElement(this.name))
-      return startTag
+      return
 
-    const contents = this.children
-      .flat(Infinity)
-      .filter(x => typeof x !== "boolean" && x !== undefined && x !== null)
-      .map(child =>
-        (child[isMetaNode] || child[isMetaRawString])
-          ? child.toString()
-          : escapeForElement(child)
-      )
-      .join("")
+    for (const child of this.children.flat(Infinity)) {
+      if (child == null || typeof child === "boolean")
+        continue
+      if (child[isMetaNode])
+        yield* child
+      else if (child[isMetaRawString] || child[Symbol.asyncIterator])
+        yield child
+      else if (child instanceof Promise)
+        yield child
+          .catch(rejected => {
+            console.error(rejected)
+            return
+          })
+      else
+        yield escapeForElement(child)
+    }
+
     // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
-    const endTag = `</${this.name}>`
-    return startTag + contents + endTag
+    yield `</${this.name}>`
+  }
+
+  toString() {
+    return [...this].join("")
   }
 }
 
@@ -201,7 +265,7 @@ export const applyClasses = (element, classes) => {
 export const applyAttributes = (element, attributes) => {
   Object.entries(attributes)
     .forEach(([name, value]) => {
-      if (value !== undefined)
+      if (value != null && value !== false)
         element.attributes[name] = value
       else
         delete element.attributes[name]
@@ -278,3 +342,57 @@ export const h = (nameOrComponent, props, ...children) => {
 export const JSXFragment = ({ children }) => children
 
 //#endregion
+
+export const replaceDeferredScriptContent
+  = `"use strict";`
+  + `customElements.define("bruh-deferred",class extends HTMLElement{`
+  + "connectedCallback(){"
+  + "const t=this.previousElementSibling;"
+  + "document.getElementById(this.dataset.replace).replaceWith(t.content);"
+  + "t.remove();"
+  + "this.remove()"
+  + "}"
+  + "})"
+
+// "Content-Security-Policy": `script-src '${replaceDeferredHash}'`
+export const replaceDeferredHash =
+  "sha512-+xpsela6B2jMNhk2cPpAgB4Z89EeB6yltQ208+kvcbUKlkg11dBjAlj2FbNFxeE0kqOuZhdVVldl3hz1yZD38Q=="
+
+export function * makeDocument(metaNodeOrFunction) {
+  // https://html.spec.whatwg.org/#the-doctype
+  yield "<!doctype html>"
+  if (metaNodeOrFunction[isMetaNode]) {
+    const metaNode = metaNodeOrFunction
+    yield* metaNode
+    return
+  }
+
+  const documentFunction = metaNodeOrFunction
+
+  const deferQueue = makePromiseQueue()
+  let deferCount = 0
+  const defer = ({ placeholder, content }) => {
+    const id = "bruh-deferred-" + deferCount++
+    deferQueue.enqueue(content.then(content => ({ id, content })))
+    return placeholder(id)
+  }
+
+  // https://html.spec.whatwg.org/#parsing-main-afterbody:parse-errors-3
+  // https://html.spec.whatwg.org/#the-after-after-body-insertion-mode:parse-errors
+  // Should place deferred content before the closing </body> tag.
+  // Placing after is defined to parse as if it was before the </body> anyways,
+  // but it's technically a parse error and browsers are allowed to drop the content.
+  const deferred = (async function * () {
+    for await (const settled of deferQueue) {
+      if (settled.status === "rejected") {
+        console.error(settled.reason)
+        continue
+      }
+      const { id, content } = settled.value
+      yield h("template", undefined, content)
+      yield h("bruh-deferred", { "data-replace": id })
+    }
+  })()
+
+  yield* documentFunction({ defer, deferred })
+}

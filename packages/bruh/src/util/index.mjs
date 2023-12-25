@@ -40,3 +40,41 @@ export const functionAsObject = f =>
   new Proxy({}, {
     get: (_, property) => f(property)
   })
+
+export const makePromiseQueue = () => {
+  const queue = new Set()
+
+  const enqueue = promise => {
+    const recursivePromise = promise
+      .then(resolved => ({
+        promise: recursivePromise,
+        settled: {
+          status: "fulfilled",
+          value: resolved
+        }
+      }))
+      .catch(rejected => ({
+        promise: recursivePromise,
+        settled: {
+          status: "rejected",
+          reason: rejected
+        }
+      }))
+    queue.add(recursivePromise)
+  }
+
+  const dequeue = async () => {
+    const { promise, settled } = await Promise.race(queue)
+    queue.delete(promise)
+    return settled
+  }
+
+  return {
+    enqueue,
+
+    async * [Symbol.asyncIterator]() {
+      while (queue.size)
+        yield await dequeue()
+    }
+  }
+}
