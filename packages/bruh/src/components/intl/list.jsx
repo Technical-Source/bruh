@@ -6,7 +6,7 @@ import {
 import { r } from "../../reactive/index.mjs"
 import { attempt, camelToDashCase, mapObject } from "../../util/index.mjs"
 import { BruhCustomElementBase, spaceSeparated } from "../util.mjs"
-import { browserLanguages, inferDirection, parseLocales } from "./util.mjs"
+import { inferDirection, parseLocales, userLanguages } from "./util.mjs"
 
 const optionNames = [
   "localeMatcher",
@@ -43,10 +43,10 @@ export class BruhList extends BruhCustomElementBase {
   constructor() {
     super()
 
-    this.#locales = r([this.bruh.attributes.locales, browserLanguages], () =>
+    this.#locales = r([this.bruh.attributes.locales, userLanguages], () =>
       parseLocales([
         ...this.bruh.attributes.locales.value ?? [],
-        ...browserLanguages.value
+        ...userLanguages.value
       ])
     )
 

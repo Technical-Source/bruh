@@ -58,7 +58,7 @@ const SelectLanguage = ({ languages, name = "language" } = {}) => {
         friendly = currentElement
       else {
         const nativeElement = <bdi lang={native.language} dir={native.direction}>{native.name}</bdi>
-        friendly = <>{nativeElement} — {currentElement}</>
+        friendly = <>{nativeElement} — {currentElement}</>
       }
 
       const isSelected = r([userLanguages], () => native.language === userLanguages.value[0] || undefined)
@@ -104,12 +104,14 @@ export class BruhLanguagePicker extends BruhCustomElementBase {
 
   #languages = r([this.bruh.attributes.languages], () => parseLocales(this.bruh.attributes.languages.value))
 
+  #select
+
   constructor() {
     super()
 
-    const select = <SelectLanguage languages={this.#languages} />
-    select.addEventListener("change", () => {
-      languagePickerLanguages.value = parseLocales([select.value])
+    this.#select = <SelectLanguage languages={this.#languages} />
+    this.#select.addEventListener("change", () => {
+      languagePickerLanguages.value = parseLocales([this.#select.value])
       localStorage.setItem(
         "bruh-language-picker-languages",
         JSON.stringify(
@@ -118,10 +120,10 @@ export class BruhLanguagePicker extends BruhCustomElementBase {
         )
       )
     })
+  }
 
-    this
-      .attachShadow({ mode: "open" })
-      .append(select)
+  mountedCallback() {
+    this.replaceChildren(this.#select)
   }
 }
 
