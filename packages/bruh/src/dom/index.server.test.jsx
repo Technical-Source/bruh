@@ -1,4 +1,4 @@
-import { describe, test, expect, vi } from "vitest"
+import { describe, test, expect, vi, bench } from "vitest"
 import {
   isMetaNode,
   isMetaTextNode,
@@ -11,16 +11,18 @@ import {
   t,
   h, // @jsx h
   JSXFragment, // @jsxFrag JSXFragment
-  makeDocument,
   replaceDeferredScriptContent,
-  replaceDeferredHash
+  replaceDeferredHash,
+  MetaDocument
 } from "./index.server.mjs"
 
 describe("Server DOM", () => {
   test("JSX Fragment is array", () => {
     const a = <a />
     const b = <b />
+    expect(<>{ a }</>).toEqual([a])
     expect(<>{ a }{ b }</>).toEqual([a, b])
+    expect(<>{ "a" }b{ "c" }</>).toEqual(["a", "b", "c"])
   })
 
   test("JSX components are functions", () => {
@@ -75,17 +77,26 @@ describe("Server DOM", () => {
     )
   })
 
-  test("makeDocument", () => {
-    const document = makeDocument(
+  test("Document toString()", () => {
+    const document = new MetaDocument(
       <html>
         <head></head>
         <body></body>
       </html>
     )
-    let result = ""
-    for (const chunk of document)
-      result += chunk
-    expect(result).toBe("<!doctype html><html><head></head><body></body></html>")
+    expect(document + "").toBe("<!doctype html><html><head></head><body></body></html>")
+  })
+
+  test("Document toStringPromise()", async () => {
+    const document = new MetaDocument(
+      <html>
+        <head></head>
+        <body></body>
+      </html>
+    )
+
+    expect(await document.toStringPromise())
+      .toBe("<!doctype html><html><head></head><body></body></html>")
   })
 
   describe("replaceDeferredScript", () => {
@@ -105,12 +116,11 @@ describe("Server DOM", () => {
     })
   })
 
-  test("makeDocument with defer", async () => {
-    let result = ''
-    const document = makeDocument(({ defer, deferred }) =>
+  test("Document with defer", async () => {
+    const document = new MetaDocument(({ defer, deferred, replaceDeferredScript }) =>
       <html>
         <head>
-          <script>{replaceDeferredScriptContent}</script>
+          {replaceDeferredScript}
         </head>
         <body>
           {
@@ -126,14 +136,8 @@ describe("Server DOM", () => {
         </body>
       </html>
     )
-    for await (const chunk of document)
-      if (chunk[Symbol.asyncIterator])
-        for await (const chunk2 of chunk)
-          result += chunk2
-      else
-        result += chunk
 
-    expect(result).toBe(
+    expect(await document.toStringPromise()).toBe(
         "<!doctype html>"
       + "<html>"
       +   "<head>"

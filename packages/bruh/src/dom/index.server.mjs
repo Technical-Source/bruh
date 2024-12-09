@@ -52,17 +52,11 @@ function * attributesToIterator(attributes) {
   for (const name in attributes) {
     const value = attributes[name]
 
-    if (value instanceof Promise) {
-      yield value
-        .then(resolved => attributesToIterator({ [name]: resolved }))
-        .catch(rejected => {
-          console.error(rejected)
-          return
-        })
-      continue
-    }
-
-    if (value == null || value === false)
+    if (
+      value == null
+      || value === false
+      || value instanceof Promise
+    )
       continue
 
     yield ` ${name}`
@@ -71,6 +65,29 @@ function * attributesToIterator(attributes) {
       continue
 
     yield `="${escapeForDoubleQuotedAttribute(value)}"`
+  }
+}
+
+// https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+async function * attributesToAsyncIterator(attributes) {
+  for (const name in attributes) {
+    try {
+      const value = await attributes[name]
+
+      if (value == null || value === false)
+        continue
+
+      yield ` ${name}`
+
+      if (value === true || value === "")
+        continue
+
+      yield `="${escapeForDoubleQuotedAttribute(value)}"`
+    }
+    catch (e) {
+      console.error(e)
+      continue
+    }
   }
 }
 
@@ -90,25 +107,6 @@ const isMetaChild = x =>
   // Disallow functions and objects
   !(typeof x === "function" || typeof x === "object")
   // Everything else can be a child when stringified
-
-class StreamableContent {
-  async * [Symbol.asyncIterator]() {
-    for await (const content of this[Symbol.iterator]()) {
-      if (content == null)
-        continue
-      else if (content[Symbol.asyncIterator])
-        yield* content[Symbol.asyncIterator]()
-      else if (content[Symbol.iterator])
-        yield* content[Symbol.iterator]()
-      else
-        yield content
-    }
-  }
-
-  toString({ promise }) {
-
-  }
-}
 
 //#region Meta Nodes that act like lightweight rendering-oriented DOM nodes
 
@@ -131,21 +129,41 @@ export class MetaTextNode {
     if (this.tag)
       yield* attributesToIterator({ tag: this.tag })
     yield ">"
-    if (this.textContent instanceof Promise) {
-      yield this.textContent
-        .then(escapeForElement)
-        .catch(rejected => {
-          console.error(rejected)
-          return
-        })
-    }
-    else
+
+    if (!(this.textContent instanceof Promise))
       yield escapeForElement(this.textContent)
+
+    yield "</bruh-textnode>"
+  }
+
+  async * [Symbol.asyncIterator]() {
+    yield `<bruh-textnode style="all:unset;display:inline"`
+    if (this.tag)
+      yield* attributesToAsyncIterator({ tag: this.tag })
+    yield ">"
+
+    try {
+      yield escapeForElement(await this.textContent)
+    }
+    catch (e) {
+      console.error(e)
+    }
+
     yield "</bruh-textnode>"
   }
 
   toString() {
-    return [...this].join("")
+    let result = ""
+    for (const chunk of this)
+      result += chunk
+    return result
+  }
+
+  async toStringPromise() {
+    let result = ""
+    for await (const chunk of this)
+      result += chunk
+    return result
   }
 
   setTag(tag) {
@@ -168,7 +186,53 @@ export class MetaElement {
     this.name = name
   }
 
-  * content({ promise }) {
+  * #childChunks(children) {
+    const partiallyFlattened =
+      Array.isArray(children)
+        ? children.flat(Infinity)
+        : children
+
+    for (const child of partiallyFlattened) {
+      if (
+        child == null
+        || typeof child === "boolean"
+        || child instanceof Promise
+      )
+        continue
+      if (child[isMetaNode])
+        yield* child
+      else if (child[isMetaRawString])
+        yield child
+      else if (typeof child === "object" && child[Symbol.iterator])
+        yield* this.#childChunks(child)
+      else if (child[Symbol.asyncIterator])
+        continue
+      else
+        yield escapeForElement(child)
+    }
+  }
+
+  async * #asyncChildChunks(children) {
+    const partiallyFlattened =
+      Array.isArray(children)
+        ? children.flat(Infinity)
+        : children
+
+    for await (const child of partiallyFlattened) {
+      if (child == null || typeof child === "boolean")
+        continue
+      if (child[isMetaNode])
+        yield* child
+      else if (child[isMetaRawString])
+        yield child
+      else if (typeof child === "object" && (child[Symbol.asyncIterator] || child[Symbol.iterator]))
+        yield* this.#asyncChildChunks(child)
+      else
+        yield escapeForElement(child)
+    }
+  }
+
+  * [Symbol.iterator]() {
     // https://html.spec.whatwg.org/multipage/syntax.html#syntax-start-tag
     yield `<${this.name}`
     yield* attributesToIterator(this.attributes)
@@ -176,29 +240,38 @@ export class MetaElement {
     if (isVoidElement(this.name))
       return
 
-    for (const child of this.children.flat(Infinity)) {
-      if (child == null || typeof child === "boolean")
-        continue
-      if (child[isMetaNode])
-        yield* child
-      else if (child[isMetaRawString] || child[Symbol.asyncIterator])
-        yield child
-      else if (child instanceof Promise)
-        yield child
-          .catch(rejected => {
-            console.error(rejected)
-            return
-          })
-      else
-        yield escapeForElement(child)
-    }
+    yield* this.#childChunks(this.children)
+
+    // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
+    yield `</${this.name}>`
+  }
+
+  async * [Symbol.asyncIterator]() {
+    // https://html.spec.whatwg.org/multipage/syntax.html#syntax-start-tag
+    yield `<${this.name}`
+    yield* attributesToAsyncIterator(this.attributes)
+    yield ">"
+    if (isVoidElement(this.name))
+      return
+
+    yield* this.#asyncChildChunks(this.children)
 
     // https://html.spec.whatwg.org/multipage/syntax.html#end-tags
     yield `</${this.name}>`
   }
 
   toString() {
-    return [...this].join("")
+    let result = ""
+    for (const chunk of this)
+      result += chunk
+    return result
+  }
+
+  async toStringPromise() {
+    let result = ""
+    for await (const chunk of this)
+      result += chunk
+    return result
   }
 }
 
@@ -358,41 +431,96 @@ export const replaceDeferredScriptContent
 export const replaceDeferredHash =
   "sha512-+xpsela6B2jMNhk2cPpAgB4Z89EeB6yltQ208+kvcbUKlkg11dBjAlj2FbNFxeE0kqOuZhdVVldl3hz1yZD38Q=="
 
-export function * makeDocument(metaNodeOrFunction) {
-  // https://html.spec.whatwg.org/#the-doctype
-  yield "<!doctype html>"
-  if (metaNodeOrFunction[isMetaNode]) {
-    const metaNode = metaNodeOrFunction
+export class MetaDocument {
+  #metaNodeOrFunction
+
+  constructor(metaNodeOrFunction) {
+    this.#metaNodeOrFunction = metaNodeOrFunction
+  }
+
+  * [Symbol.iterator]() {
+    if (!this.#metaNodeOrFunction[isMetaNode])
+      throw new Error("Not a meta node")
+
+    const metaNode = this.#metaNodeOrFunction
+
+    // https://html.spec.whatwg.org/#the-doctype
+    yield "<!doctype html>"
     yield* metaNode
-    return
   }
 
-  const documentFunction = metaNodeOrFunction
-
-  const deferQueue = makePromiseQueue()
-  let deferCount = 0
-  const defer = ({ placeholder, content }) => {
-    const id = "bruh-deferred-" + deferCount++
-    deferQueue.enqueue(content.then(content => ({ id, content })))
-    return placeholder(id)
-  }
-
-  // https://html.spec.whatwg.org/#parsing-main-afterbody:parse-errors-3
-  // https://html.spec.whatwg.org/#the-after-after-body-insertion-mode:parse-errors
-  // Should place deferred content before the closing </body> tag.
-  // Placing after is defined to parse as if it was before the </body> anyways,
-  // but it's technically a parse error and browsers are allowed to drop the content.
-  const deferred = (async function * () {
-    for await (const settled of deferQueue) {
-      if (settled.status === "rejected") {
-        console.error(settled.reason)
-        continue
-      }
-      const { id, content } = settled.value
-      yield h("template", undefined, content)
-      yield h("bruh-deferred", { "data-replace": id })
+  async * [Symbol.asyncIterator]() {
+    // https://html.spec.whatwg.org/#the-doctype
+    yield "<!doctype html>"
+    if (this.#metaNodeOrFunction[isMetaNode]) {
+      const metaNode = this.#metaNodeOrFunction
+      yield* metaNode
+      return
     }
-  })()
 
-  yield* documentFunction({ defer, deferred })
+    const documentFunction = this.#metaNodeOrFunction
+
+    const deferQueue = makePromiseQueue()
+    let deferCount = 0
+    const defer = ({ placeholder, content }) => {
+      const id = "bruh-deferred-" + deferCount++
+      deferQueue.enqueue(content.then(content => ({ id, content })))
+      return placeholder(id)
+    }
+
+    // https://html.spec.whatwg.org/#parsing-main-afterbody:parse-errors-3
+    // https://html.spec.whatwg.org/#the-after-after-body-insertion-mode:parse-errors
+    // Should place deferred content before the closing </body> tag.
+    // Placing after is defined to parse as if it was before the </body> anyways,
+    // but it's technically a parse error and browsers are allowed to drop the content.
+    const deferred = (async function * () {
+      for await (const settled of deferQueue) {
+        if (settled.status === "rejected") {
+          console.error(settled.reason)
+          continue
+        }
+        const { id, content } = settled.value
+        yield h("template", undefined, content)
+        yield h("bruh-deferred", { "data-replace": id })
+      }
+    })()
+
+    const replaceDeferredScript = h("script", undefined, replaceDeferredScriptContent)
+
+    yield* documentFunction({ defer, deferred, replaceDeferredScript })
+  }
+
+  toStream() {
+    const encoder = new TextEncoder()
+
+    const asyncIterator = this[Symbol.asyncIterator]()
+
+    return new ReadableStream({
+      async pull(controller) {
+        const { value, done } = await asyncIterator.next()
+        if (done) {
+          controller.close()
+          return
+        }
+
+        controller.enqueue(
+          encoder.encode(value)
+        )
+      }
+    })
+  }
+
+  toString() {
+    let result = ""
+    for (const chunk of this)
+      result += chunk
+    return result
+  }
+
+  async toStringPromise() {
+    let result = ""
+    for await (const chunk of this)
+      result += chunk
+    return result
+  }
 }
