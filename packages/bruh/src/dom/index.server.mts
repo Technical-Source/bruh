@@ -29,6 +29,7 @@ export type TerminalBruhChild =
 
 export type BruhChild =
   | MaybePromise<TerminalBruhChild>
+  | Promise<BruhChild>
   | Iterable<BruhChild>
   | AsyncIterable<BruhChild>
 
@@ -146,18 +147,30 @@ const isVoidElement = (element: string) =>
   voidElements.has(element as any)
 
 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
+// https://html.spec.whatwg.org/multipage/syntax.html#escapable-raw-text-elements (textarea and title)
 // https://html.spec.whatwg.org/multipage/syntax.html#cdata-rcdata-restrictions
-// Does not work for https://html.spec.whatwg.org/multipage/syntax.html#raw-text-elements (script and style)
+const escapeForElementReplacer = (match: string) => match === "&" ? "&amp;" : "&lt;"
 const escapeForElement = (x: LikelyAsString) =>
+  (x + "").replace(/[&<]/g, escapeForElementReplacer)
+
+// https://html.spec.whatwg.org/multipage/syntax.html#raw-text-elements (script and style)
+// https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+const escapeForScript = (x: LikelyAsString) =>
   (x + "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
+    .replace(/<!--/g, "\\x3C!--")
+    .replace(/<script/g, "\\x3Cscript")
+    .replace(/<\/script/g, "\\x3C/script")
+
+const escapeForStyle = (x: LikelyAsString) =>
+  (x + "")
+    .replace(/<!--/g, "\\x3C!--")
+    .replace(/<style/g, "\\x3Cstyle")
+    .replace(/<\/style/g, "\\x3C/style")
 
 // https://html.spec.whatwg.org/multipage/syntax.html#syntax-attribute-value
+const escapeForDoubleQuotedAttributeReplacer = (match: string) => match === "&" ? "&amp;" : "&quot;"
 const escapeForDoubleQuotedAttribute = (x: LikelyAsString) =>
-  (x + "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
+  (x + "").replace(/[&"]/g, escapeForDoubleQuotedAttributeReplacer)
 
 type Attributes = Partial<Record<string, MaybePromise<LikelyAsString | LikelyAsBoolean>>>
 
@@ -214,7 +227,7 @@ type MetaNode =
   | MetaElement<string, Namespace>
 
 // Text nodes have no individual HTML representation
-// We emulate this with a custom element <bruh-textnode> with an inline style reset
+// We emulate this with a custom element <bruh-text> with an inline style reset
 // These elements can be hydrated very quickly and even be marked with a tag
 export class MetaTextNode {
   [isMetaNode]     = true;
@@ -228,19 +241,21 @@ export class MetaTextNode {
   }
 
   * [Symbol.iterator](): IterableIterator<string> {
-    yield `<bruh-textnode style="all:unset;display:inline"`
+    yield `<bruh-text style="all:unset;display:inline"`
     if (this.tag)
       yield* attributesToIterator({ tag: this.tag })
     yield ">"
 
-    if (!(this.textContent instanceof Promise))
+    if (this.textContent instanceof Promise)
+      yield "<!--Promise-->"
+    else
       yield escapeForElement(this.textContent)
 
-    yield "</bruh-textnode>"
+    yield "</bruh-text>"
   }
 
   async * [Symbol.asyncIterator](): AsyncIterableIterator<string> {
-    yield `<bruh-textnode style="all:unset;display:inline"`
+    yield `<bruh-text style="all:unset;display:inline"`
     if (this.tag)
       yield* attributesToAsyncIterator({ tag: this.tag })
     yield ">"
@@ -252,7 +267,7 @@ export class MetaTextNode {
       console.error(e)
     }
 
-    yield "</bruh-textnode>"
+    yield "</bruh-text>"
   }
 
   toString(): string {
@@ -288,8 +303,16 @@ export class MetaElement<
   attributes: AttributesToApply<Name, NS> = {}
   children: Array<BruhChild> = []
 
+  #isRawTextOnly
+  #escape
+
   constructor(name: Name) {
     this.name = name
+    this.#isRawTextOnly = name === "script" || name === "style"
+    this.#escape
+      = name === "script" ? escapeForScript
+      : name === "style"  ? escapeForStyle
+                          : escapeForElement
   }
 
   * #childChunks(children: Iterable<BruhChild>): IterableIterator<string> {
@@ -299,22 +322,26 @@ export class MetaElement<
         : children
 
     for (const child of partiallyFlattened) {
-      if (
-        child == null
-        || typeof child === "boolean"
-        || child instanceof Promise
-      )
-        continue
-      if (typeof child === "object" && isMetaNode in child)
-        yield* child
-      else if (typeof child === "object" && isMetaRawString in child)
-        yield child as any as string
-      else if (typeof child === "object" && Symbol.iterator in child)
-        yield* this.#childChunks(child)
-      else if (typeof child === "object" && Symbol.asyncIterator in child)
-        continue
+      if (child == null || typeof child === "boolean") {
+        if (this.#isRawTextOnly)
+          continue
+        else
+          yield `<!--${child}-->`
+      }
+      else if (typeof child === "object") {
+        if (!this.#isRawTextOnly && isMetaNode in child)
+          yield* child
+        else if (!this.#isRawTextOnly && child instanceof Promise)
+          yield "<!--Promise-->"
+        else if (!this.#isRawTextOnly && Symbol.asyncIterator in child)
+          yield "<!--asyncIterator-->"
+        else if (isMetaRawString in child)
+          yield child as any as string
+        else if (Symbol.iterator in child)
+          yield* this.#childChunks(child)
+      }
       else
-        yield escapeForElement(child)
+        yield this.#escape(child)
     }
   }
 
@@ -324,17 +351,23 @@ export class MetaElement<
         ? children.flat<BruhChild, number>(Infinity)
         : children
 
-    for await (const child of partiallyFlattened) {
-      if (child == null || typeof child === "boolean")
-        continue
-      if (typeof child === "object" && isMetaNode in child)
-        yield* child
-      else if (typeof child === "object" && isMetaRawString in child)
-        yield child as any as string
-      else if (typeof child === "object" && (Symbol.iterator in child || Symbol.asyncIterator in child))
-        yield* this.#asyncChildChunks(child)
+    for await (const child of (partiallyFlattened as AsyncIterable<BruhChild>)) {
+      if (child == null || typeof child === "boolean") {
+        if (this.#isRawTextOnly)
+          continue
+        else
+          yield `<!--${child}-->`
+      }
+      else if (typeof child === "object") {
+        if (!this.#isRawTextOnly && isMetaNode in child)
+          yield* child
+        else if (isMetaRawString in child)
+          yield child as any as string
+        else if (Symbol.iterator in child || Symbol.asyncIterator in child)
+          yield* this.#asyncChildChunks(child)
+      }
       else
-        yield escapeForElement(child)
+        yield this.#escape(child)
     }
   }
 
@@ -395,9 +428,11 @@ export class MetaRawString extends String {
 
 //#region Meta element helper functions e.g. applyAttributes()
 
+type ElementWithStyle = MetaElement<string, HTMLNamespace | SVGNamespace | MathMLNamespace>
+
 // Merge style rules with an object
 export const applyStyles = (
-  element: MetaElement<string, HTMLNamespace | SVGNamespace>,
+  element: ElementWithStyle,
   styles:  StylesToApply
 ) => {
   // TODO handle promises
@@ -661,11 +696,22 @@ type MetaDocumentDeferFunction =
   }
 ) => P
 
+type MetaDocumentDisabledDeferFunction =
+(
+  context: {
+    content: Promise<BruhChild>
+  }
+) => Promise<BruhChild>
+
 type MetaDocumentFunction = (
   context: {
     defer: MetaDocumentDeferFunction,
     deferred: AsyncIterableIterator<MetaElement<"template" | "bruh-deferred">>,
     replaceDeferredScript: MetaElement<"script">
+  } | {
+    defer: MetaDocumentDisabledDeferFunction,
+    deferred?: undefined
+    replaceDeferredScript?: undefined
   }
 ) => MetaElement<string>
 
@@ -687,7 +733,7 @@ export class MetaDocument {
     yield* metaElement
   }
 
-  async * [Symbol.asyncIterator](): AsyncIterableIterator<string> {
+  async * [Symbol.asyncIterator]({ deferred: allowDefer = true } = {}): AsyncIterableIterator<string> {
     // https://html.spec.whatwg.org/#the-doctype
     yield "<!doctype html>"
     if (isMetaElement in this.#metaElementOrFunction) {
@@ -697,6 +743,12 @@ export class MetaDocument {
     }
 
     const documentFunction = this.#metaElementOrFunction
+
+    if (!allowDefer) {
+      const defer: MetaDocumentDisabledDeferFunction = ({ content }) => content
+      yield* documentFunction({ defer })
+      return
+    }
 
     const deferQueue = makePromiseQueue<{ id: `bruh-deferred-${number}`, content: BruhChild }, unknown>()
     let deferCount = 0
@@ -728,10 +780,10 @@ export class MetaDocument {
     yield* documentFunction({ defer, deferred, replaceDeferredScript })
   }
 
-  toStream(): ReadableStream<Uint8Array> {
+  toStream({ deferred = true } = {}): ReadableStream<Uint8Array> {
     const encoder = new TextEncoder()
 
-    const asyncIterator = this[Symbol.asyncIterator]()
+    const asyncIterator = this[Symbol.asyncIterator]({ deferred })
 
     return new ReadableStream({
       async pull(controller) {
@@ -748,6 +800,14 @@ export class MetaDocument {
     })
   }
 
+  toResponse({ deferred = true } = {}): Response {
+    return new Response(this.toStream({ deferred }), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8"
+      }
+    })
+  }
+
   toString(): string {
     let result = ""
     for (const chunk of this)
@@ -755,9 +815,9 @@ export class MetaDocument {
     return result
   }
 
-  async toStringPromise(): Promise<string> {
+  async toStringPromise({ deferred = false } = {}): Promise<string> {
     let result = ""
-    for await (const chunk of this)
+    for await (const chunk of this[Symbol.asyncIterator]({ deferred }))
       result += chunk
     return result
   }

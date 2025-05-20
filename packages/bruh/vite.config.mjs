@@ -19,6 +19,7 @@ export default defineConfig({
         "reactive": src("./src/reactive/index.mts"),
 
         "utils": src("./src/utils/index.mts"),
+        "utils/browser": src("./src/utils/browser.mts"),
 
         "cli/node": src("./src/cli/index.mts"),
 
@@ -26,6 +27,17 @@ export default defineConfig({
 
         "components/optimized-picture/server": src("./src/components/optimized-picture/server.tsx"),
         "components/optimized-picture/hydrate": src("./src/components/optimized-picture/hydrate.mts"),
+
+        "components/utils": src("./src/components/utils.mts"),
+        "components/custom-elements": src("./src/components/custom-elements.mts"),
+
+        "components/intl/utils": src("./src/components/intl/utils.mts"),
+        "components/intl/display-name": src("./src/components/intl/display-name.tsx"),
+        "components/intl/number": src("./src/components/intl/number.tsx"),
+        "components/intl/plural": src("./src/components/intl/plural.tsx"),
+        "components/intl/list": src("./src/components/intl/list.tsx"),
+        "components/intl/language-picker": src("./src/components/intl/language-picker.tsx"),
+        "components/intl/date-time": src("./src/components/intl/date-time.tsx"),
 
         "polyfills/weakref": src("./src/polyfills/weakref.mts")
       },

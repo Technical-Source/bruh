@@ -24,9 +24,9 @@ import type {
 } from "html-info"
 
 export type TerminalBruhChild =
-  Node |
-  LikelyAsString |
-  LikelyAsAbsent
+  | Node
+  | LikelyAsString
+  | LikelyAsAbsent
 
 export type TerminalBruhChildOutputNode<Child extends TerminalBruhChild>
   = Child extends Node
@@ -37,9 +37,14 @@ export type TerminalBruhChildOutputNode<Child extends TerminalBruhChild>
     ? Comment
   : Node
 
+// disallow a reactive from directly holding a reactive
+export type FlatBruhChild =
+  | MaybeReactive<TerminalBruhChild>
+  | Reactive<TerminalBruhChild | Iterable<BruhChild>>
+
 export type BruhChild =
-  MaybeReactive<TerminalBruhChild> |
-  Iterable<BruhChild>
+  | FlatBruhChild
+  | Iterable<BruhChild>
 
 export type StylesToApply = {
   [Property in keyof Styles]: MaybeReactive<Styles[Property] | LikelyAsAbsent>
@@ -151,29 +156,31 @@ const reactiveTerminalBruhChildToNode: {
     }
 
     const oldNode = node as typeof node & ChildNode
-    const child_ = child as Reactive<TerminalBruhChild | ReadonlyArray<TerminalBruhChild>>
+    const child_ = child as Reactive<BruhChild>
 
+    // If an iterable now, stop swapping, then switch to reactive iterable swapping
+    if (
+      child.value != null &&
+      typeof child.value === "object" &&
+      Symbol.iterator in child.value
+    ) {
+      stopReacting()
+      oldNode.replaceWith(...reactiveIterableBruhChildToNodes(child_ as Reactive<Iterable<BruhChild>>))
+    }
     // Normal swap
-    if (!Array.isArray(child_.value)) {
+    else {
       node = terminalBruhChildToNode(child_.value as TerminalBruhChild)
       oldNode.replaceWith(node)
-    }
-    // If an array now, stop swapping, then switch to reactive array swapping
-    else {
-      stopReacting()
-      oldNode.replaceWith(...reactiveArrayBruhChildToNodes(child_ as Reactive<ReadonlyArray<TerminalBruhChild>>))
     }
   })
 
   return node
 }
 
-// Auto-swapping reactive array of nodes
-const reactiveArrayBruhChildToNodes: {
-  (child: Reactive<ReadonlyArray<BruhChild>>): [Comment, ...ReadonlyArray<Node>, Comment]
-} = (child: Reactive<ReadonlyArray<BruhChild>>) => {
+// Auto-swapping reactive iterable of nodes
+function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>): IterableIterator<Node> {
   // Markers owned by the swapper here itself, so that
-  // the values in the array can be swapped separately
+  // the values in the iterable can be swapped separately
   const first = document.createComment("[")
   const last  = document.createComment("]")
 
@@ -189,8 +196,12 @@ const reactiveArrayBruhChildToNodes: {
     range.setStartAfter(first)
 
     // Normal swap, replacing content between the first and last markers
-    if (Array.isArray(child.value)) {
-      const child_ = child as Reactive<ReadonlyArray<TerminalBruhChild>>
+    if (
+      child.value != null &&
+      typeof child.value === "object" &&
+      Symbol.iterator in child.value
+    ) {
+      const child_ = child as Reactive<Iterable<BruhChild>>
 
       range.setEndBefore(last)
       range.deleteContents()
@@ -207,31 +218,42 @@ const reactiveArrayBruhChildToNodes: {
     }
   })
 
-  return [
-    first,
-    ...bruhChildrenToNodes(child.value),
-    last
-  ]
+  yield first
+  yield* bruhChildrenToNodes(child.value)
+  yield last
 }
 
-// Processes bruh children into an array of DOM nodes
+// Processes bruh children into an iterable of DOM nodes
 // Reactive values are automatically replaced, so the output must be placed into a parent node
-// before any top level (after flattening arrays) reactions run
-export const bruhChildrenToNodes = (children: ReadonlyArray<BruhChild>) => {
-  // @ts-ignore
-  const flattened = children.flat(Infinity) as ReadonlyArray<FlatBruhChild>
-  return flattened.flatMap(child => {
-    // Non-reactive child
-    if (!isReactive(child))
-      return [terminalBruhChildToNode(child)]
+// before any top level (after flattening iterables) reactions run
+export function * bruhChildrenToNodes(children: Iterable<BruhChild>): IterableIterator<Node> {
+  const partiallyFlattened =
+    Array.isArray(children)
+      ? children.flat<BruhChild, number>(Infinity)
+      : children
 
-    // Single reactive value
-    if (!Array.isArray(child.value))
-      return [reactiveTerminalBruhChildToNode(child as Reactive<TerminalBruhChild>)]
-
-    // Reactive array
-    return reactiveArrayBruhChildToNodes(child as Reactive<ReadonlyArray<BruhChild>>)
-  })
+  for (const child of partiallyFlattened) {
+    if (!isReactive(child)) {
+      if (
+        child != null &&
+        typeof child === "object" &&
+        Symbol.iterator in child
+      )
+        yield* bruhChildrenToNodes(child)
+      else
+        yield terminalBruhChildToNode(child)
+    }
+    else {
+      if (
+        child.value != null &&
+        typeof child.value === "object" &&
+        Symbol.iterator in child.value
+      )
+        yield* reactiveIterableBruhChildToNodes(child as Reactive<Iterable<BruhChild>>)
+      else
+        yield reactiveTerminalBruhChildToNode(child as Reactive<TerminalBruhChild>)
+    }
+  }
 }
 
 //#endregion
@@ -241,7 +263,7 @@ export const bruhChildrenToNodes = (children: ReadonlyArray<BruhChild>) => {
 type ElementWithStyle = HTMLElement | SVGElement | MathMLElement
 
 // https://w3c.github.io/csswg-drafts/cssom/#the-elementcssinlinestyle-mixin
-const isElementWithStyle = <T extends Element>(element: T): element is (T & ElementWithStyle)  =>
+const isElementWithStyle = <T extends Element>(element: T): element is (T & ElementWithStyle) =>
   // @ts-ignore
   element.style instanceof CSSStyleDeclaration
 
@@ -436,7 +458,11 @@ export const jsx: {
   if ('children' in props) {
     element.append(
       ...bruhChildrenToNodes(
-        Array.isArray(props.children)
+        (
+          props.children != null &&
+          typeof props.children === "object" &&
+          Symbol.iterator in props.children
+        )
           ? props.children
           : [props.children]
       )
@@ -492,20 +518,35 @@ export const Fragment =
 //#endregion
 
 
-// Hydration of all bruh-textnode's from prerendered html
-export const hydrateTextNodes = () => {
-  const tagged: { [tag: string]: Text } = {}
-  const bruhTextNodes = document.getElementsByTagName("bruh-textnode")
+export class BruhText extends HTMLElement {
+  static hydrated: { readonly [tag: string]: ReadonlySet<Text> } = {}
 
-  for (const bruhTextNode of bruhTextNodes) {
-    const textNode = document.createTextNode(bruhTextNode.textContent!)
+  constructor() {
+    super()
 
-    const tag = bruhTextNode.getAttribute("tag")
-    if (tag)
-      tagged[tag] = textNode
+    const textNode = document.createTextNode(this.textContent!)
 
-    bruhTextNode.replaceWith(textNode)
+    const tag = this.getAttribute("tag")
+    if (tag) {
+      const set = (BruhText.hydrated as { [tag: string]: Set<Text> })[tag] ??= new Set()
+      set.add(textNode)
+    }
+
+    this.replaceWith(textNode)
   }
+}
 
-  return tagged
+customElements.define("bruh-text", BruhText)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "bruh-text": BruhText
+  }
+}
+declare module "html-info" {
+  interface HTMLTagToAttributes {
+    "bruh-text": {
+      "tag"?: string
+    }
+  }
 }

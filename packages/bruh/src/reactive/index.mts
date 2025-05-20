@@ -7,7 +7,7 @@ export const isReactive = (x: unknown): x is Reactive<unknown> =>
 type Reaction = () => void
 type StopReacting = () => void
 
-export type Reactive<T> = {
+export interface Reactive<T> {
   [isReactiveSymbol]: true
 
   value: T
@@ -57,15 +57,14 @@ export class SimpleReactive<T> implements Reactive<T> {
   }
 }
 
-type SourceNode<T>     = FunctionalReactive<T, "source">
-type DerivativeNode<T> = FunctionalReactive<T, "derivative">
-type DependencyNode<T> = FunctionalReactive<T, any>
+export type SourceNode<T>     = FunctionalReactive<T, "source">
+export type DerivativeNode<T> = FunctionalReactive<T, "derivative">
 
 /**
  * A reactive implementation for building functional reactive graphs.
  * Ensures state consistency, minimal node updates, and transparent update batching.
  */
-export class FunctionalReactive<T, U extends "source" | "derivative"> implements Reactive<T> {
+export class FunctionalReactive<T, U extends "source" | "derivative" = any> implements Reactive<T> {
   [isReactiveSymbol] = true as const
 
   #weakRef = new WeakRef(this)
@@ -104,11 +103,11 @@ export class FunctionalReactive<T, U extends "source" | "derivative"> implements
 
   constructor(value: T)
   constructor(
-    dependencies: ReadonlyArray<DependencyNode<unknown>>,
+    dependencies: ReadonlyArray<FunctionalReactive<unknown>>,
     f: () => T
   )
   constructor(
-    x: T | ReadonlyArray<DependencyNode<unknown>>,
+    x: T | ReadonlyArray<FunctionalReactive<unknown>>,
     f?: undefined | (() => T)
   ) {
     // No derivation function means this is a source node
@@ -122,7 +121,7 @@ export class FunctionalReactive<T, U extends "source" | "derivative"> implements
 
     // Derived node
     const this_ = this as DerivativeNode<T>
-    const dependencies = x as ReadonlyArray<DependencyNode<unknown>>
+    const dependencies = x as ReadonlyArray<FunctionalReactive<unknown>>
 
     try {
       this_.#value = f()
@@ -253,7 +252,7 @@ type R = {
    * A derived node
    */
   <T>(
-    dependencies: ReadonlyArray<DependencyNode<unknown>>,
+    dependencies: ReadonlyArray<FunctionalReactive<unknown>>,
     f: () => T
   ): DerivativeNode<T>
 }
@@ -261,7 +260,7 @@ type R = {
  * A convenient wrapper for FunctionalReactive
  */
 export const r: R = <T extends unknown>(
-  x?: T | ReadonlyArray<DependencyNode<unknown>>,
+  x?: T | ReadonlyArray<FunctionalReactive<unknown>>,
   f?: undefined | (() => T)
 ) =>
   // @ts-ignore

@@ -58,6 +58,10 @@
       "types": "./dist/types/utils/index.d.mts",
       "default": "./dist/utils.mjs"
     },
+    "./utils/browser": {
+      "types": "./dist/types/utils/browser.d.mts",
+      "default": "./dist/utils/browser.mjs"
+    },
     "./cli": {
       "node": {
         "types": "./dist/types/cli/index.d.mts",
@@ -77,6 +81,42 @@
     "./components/optimized-picture/hydrate": {
       "types": "./dist/types/components/optimized-picture/hydrate.d.mts",
       "default": "./dist/components/optimized-picture/hydrate.mjs"
+    },
+    "./components/utils": {
+      "types": "./dist/types/components/utils.d.mts",
+      "default": "./dist/components/utils.mjs"
+    },
+    "./components/custom-elements": {
+      "types": "./dist/types/components/custom-elements.d.mts",
+      "default": "./dist/components/custom-elements.mjs"
+    },
+    "./components/intl/utils": {
+      "types": "./dist/types/components/intl/utils.d.mts",
+      "default": "./dist/components/intl/utils.mjs"
+    },
+    "./components/intl/display-name": {
+      "types": "./dist/types/components/intl/display-name.d.mts",
+      "default": "./dist/components/intl/display-name.mjs"
+    },
+    "./components/intl/number": {
+      "types": "./dist/types/components/intl/number.d.mts",
+      "default": "./dist/components/intl/number.mjs"
+    },
+    "./components/intl/plural": {
+      "types": "./dist/types/components/intl/plural.d.mts",
+      "default": "./dist/components/intl/plural.mjs"
+    },
+    "./components/intl/list": {
+      "types": "./dist/types/components/intl/list.d.mts",
+      "default": "./dist/components/intl/list.mjs"
+    },
+    "./components/intl/language-picker": {
+      "types": "./dist/types/components/intl/language-picker.d.mts",
+      "default": "./dist/components/intl/language-picker.mjs"
+    },
+    "./components/intl/date-time": {
+      "types": "./dist/types/components/intl/date-time.d.mts",
+      "default": "./dist/components/intl/date-time.mjs"
     },
     "./polyfills/weakref": {
       "types": "./dist/types/polyfills/weakref.d.mts",
@@ -100,7 +140,7 @@
   },
   "dependencies": {
     "csstype": "^3.1.3",
-    "html-info": "^0.0.8"
+    "html-info": "^0.0.9"
   },
   "optionalDependencies": {
     "cac": "^6.7.14",

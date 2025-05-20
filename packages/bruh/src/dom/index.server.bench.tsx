@@ -7,7 +7,7 @@ import {
   rawString,
   t,
   MetaDocument
-} from "./index.server.mts"
+} from "bruh/server"
 import { Readable } from 'node:stream'
 
 describe("Server DOM", () => {

@@ -9,7 +9,7 @@ import {
   replaceDeferredScriptContent,
   replaceDeferredHash,
   MetaDocument
-} from "./index.server.mts"
+} from "bruh/server"
 
 describe("Server DOM", () => {
   test("JSX Fragment with single child is child", () => {
@@ -144,6 +144,19 @@ describe("Server DOM", () => {
     )
 
     expect(await document.toStringPromise()).toBe(
+        "<!doctype html>"
+      + "<html>"
+      +   "<head>"
+      +     "<!--undefined-->"
+      +   "</head>"
+      +   "<body>"
+      +     "loaded content"
+      +     "<!--undefined-->"
+      +   "</body>"
+      + "</html>"
+    )
+
+    expect(await document.toStringPromise({ deferred: true })).toBe(
         "<!doctype html>"
       + "<html>"
       +   "<head>"
