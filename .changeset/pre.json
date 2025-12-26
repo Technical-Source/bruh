@@ -1,0 +1,12 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "bruh": "2.0.0-beta.0",
+    "create-bruh": "2.0.0-beta.0",
+    "vite-plugin-bruh": "2.0.0-beta.0"
+  },
+  "changesets": [
+    "funny-trees-lie"
+  ]
+}
