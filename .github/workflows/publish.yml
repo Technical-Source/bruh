@@ -1,16 +1,21 @@
 name: Publish to NPM
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main
+      - v2
 
 jobs:
   publish:
+    if: github.repository == 'Technical-Source/bruh'
+
     runs-on: ubuntu-latest
 
     permissions:
       id-token: write
-      contents: read
+      contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v6
