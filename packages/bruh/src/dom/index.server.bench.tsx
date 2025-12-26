@@ -8,7 +8,7 @@ import {
   t,
   MetaDocument
 } from "bruh/server"
-import { Readable } from 'node:stream'
+import { Readable } from "node:stream"
 
 describe("Server DOM", () => {
   const smallDocument = new MetaDocument(

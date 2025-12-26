@@ -156,16 +156,47 @@ const reflectLanguagePickerLanguages = () => {
 reflectLanguagePickerLanguages()
 addEventListener("storage", reflectLanguagePickerLanguages) // only accounts for changes on different windows
 
-const userLocales = r([currentUrl], () => parseLocales(currentUrl.value.searchParams.getAll("locale")))
-export const userLanguages = r([currentUrl, userLocales, languagePickerLanguages, browserLanguages], () => [
-  ...parseLocales(currentUrl.value.searchParams.getAll("language")),
-  ...userLocales.value,
+const urlLocales = r([currentUrl], () => parseLocales(currentUrl.value.searchParams.getAll("locale")))
+const urlLanguages = r([currentUrl], () => parseLocales(currentUrl.value.searchParams.getAll("language")))
+const urlRegions = r([currentUrl], () => {
+  const regions = new Set<string>()
+
+  for (const region of currentUrl.value.searchParams.getAll("region")) {
+    const parsed = parseRegion(region)
+    if (parsed)
+      regions.add(parsed)
+  }
+
+  return [...regions]
+})
+
+export const userLanguages = r([urlLanguages, urlLocales, languagePickerLanguages, browserLanguages], () => [
+  ...urlLanguages.value,
+  ...urlLocales.value,
   ...languagePickerLanguages.value,
   ...browserLanguages.value
 ] as const)
-export const userRegion = r([currentUrl, userLocales], () =>
-  parseRegion(currentUrl.value.searchParams.get("region")) ?? inferRegion(userLocales.value[0])
-)
+
+export const userRegions = r([currentUrl, urlRegions, urlLocales, urlLanguages], () => {
+  const regions = new Set<string>(urlRegions.value)
+  const guessedRegions = new Set<string>()
+
+  const locales = [
+    ...urlLocales.value,
+    ...urlLanguages.value,
+    ...languagePickerLanguages.value,
+    ...browserLanguages.value
+  ]
+
+  for (const locale of locales) {
+    if (locale.region)
+      regions.add(locale.region)
+    else
+      guessedRegions.add(locale.maximize().region!)
+  }
+
+  return unique([...regions, ...guessedRegions]) as ReadonlyArray<string>
+})
 
 
 const segment = (content: string, locales: Intl.LocalesArgument, options: Intl.SegmenterOptions) =>
@@ -181,14 +212,14 @@ export const segmentTree = (locales: Intl.LocalesArgument, content: string) =>
             ({
               type: "grapheme",
               content: grapheme.segment
-            })
+            } as const)
           )
         return word.isWordLike
             ? {
               type: "word",
               content: graphemes
-            }
+            } as const
             : graphemes
       })
-    })
+    } as const)
   )

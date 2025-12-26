@@ -1,4 +1,5 @@
-import { t } from "bruh/dom"
+/** @jsxImportSource bruh/server */
+import { t } from "bruh/server"
 
 const counterNumber = t(0).setTag("counterNumber")
 

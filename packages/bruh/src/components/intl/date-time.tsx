@@ -17,7 +17,7 @@ export const getTimeZoneOffset = (timeZone?: string) => {
   if (timeZone === undefined)
     return new Date().getTimezoneOffset()
 
-  const longOffset = new Intl.DateTimeFormat('en', {
+  const longOffset = new Intl.DateTimeFormat("en", {
     timeZone,
     timeZoneName: "longOffset"
   })

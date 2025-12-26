@@ -1,6 +1,6 @@
 import sharp from "sharp"
-import { readdir, writeFile } from "fs/promises"
-import { extname, join } from "path"
+import { readdir, writeFile } from "node:fs/promises"
+import { extname, join } from "node:path"
 
 const avif = async (filePath: string, sharpInstance: sharp.Sharp) =>
   sharpInstance

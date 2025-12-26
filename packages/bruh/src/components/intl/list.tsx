@@ -78,7 +78,7 @@ export class BruhList extends BruhCustomElementBase<BruhListAttributes> {
 
       const result = renderParts(formatter.formatToParts(this.#itemSlotNames.value))
 
-      return <bdi lang={locale} dir={direction} aria-role="list">{result}</bdi> as HTMLElement
+      return <bdi lang={locale} dir={direction} role="list">{result}</bdi> as HTMLElement
     })
 
     const shadowContent = bruhChildrenToNodes([this.#formatted])

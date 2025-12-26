@@ -1,5 +1,5 @@
 /** @jsxImportSource bruh/server */
-import { readFile } from "fs/promises"
+import { readFile } from "node:fs/promises"
 
 const OptimizedPicture = async (
   options: {

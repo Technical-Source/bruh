@@ -455,7 +455,7 @@ export const jsx: {
       ? document.createElementNS(namespace, name) as ElementType<Name, NS>
       : document.createElement  (           name) as ElementType<Name, NS>
 
-  if ('children' in props) {
+  if ("children" in props) {
     element.append(
       ...bruhChildrenToNodes(
         (

@@ -111,7 +111,8 @@ export namespace JSX {
 
   export type Element = any
 
-  export type ElementType = HTMLTag | SVGTag | MathMLTag | ((props: any) => Element)}
+  export type ElementType = HTMLTag | SVGTag | MathMLTag | ((props: any) => Element)
+}
 
 const isMetaNode      = Symbol.for("bruh meta node")
 const isMetaTextNode  = Symbol.for("bruh meta text node")
@@ -612,7 +613,7 @@ export const jsx: {
 
   const element = new MetaElement<Name, NS>(name)
 
-  if ('children' in props) {
+  if ("children" in props) {
     if (Array.isArray(props.children))
       element.children.push(...props.children)
     else

@@ -2,6 +2,8 @@
   "name": "bruh-monorepo",
   "private": true,
   "workspaces": [
-    "./packages/*"
+    "./packages/*",
+    "./packages/create-bruh/minimal",
+    "./packages/create-bruh/vite"
   ]
 }

@@ -112,7 +112,7 @@ describe("Server DOM", () => {
           "sha-512",
           new TextEncoder().encode(text)
         )
-        let binary = ''
+        let binary = ""
         for (const byte of new Uint8Array(buffer))
           binary += String.fromCharCode(byte)
         return "sha512-" + btoa(binary)
