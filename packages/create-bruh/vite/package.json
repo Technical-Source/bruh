@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "create-bruh-template-vite",
   "scripts": {
     "dev": "vite",
