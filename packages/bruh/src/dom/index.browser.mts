@@ -142,6 +142,12 @@ const terminalBruhChildToNode: {
     return document.createTextNode(child + "")
 }
 
+const isBruhIterable = (x: unknown): x is Iterable<BruhChild> =>
+  x != null &&
+  typeof x === "object" &&
+  !(x instanceof Node) &&
+  Symbol.iterator in x
+
 // Auto-swapping single reactive node
 const reactiveTerminalBruhChildToNode: {
   <Child extends TerminalBruhChild>(child: Reactive<Child>): TerminalBruhChildOutputNode<Child>
@@ -159,11 +165,7 @@ const reactiveTerminalBruhChildToNode: {
     const child_ = child as Reactive<BruhChild>
 
     // If an iterable now, stop swapping, then switch to reactive iterable swapping
-    if (
-      child.value != null &&
-      typeof child.value === "object" &&
-      Symbol.iterator in child.value
-    ) {
+    if (isBruhIterable(child.value)) {
       stopReacting()
       oldNode.replaceWith(...reactiveIterableBruhChildToNodes(child_ as Reactive<Iterable<BruhChild>>))
     }
@@ -196,11 +198,7 @@ function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>
     range.setStartAfter(first)
 
     // Normal swap, replacing content between the first and last markers
-    if (
-      child.value != null &&
-      typeof child.value === "object" &&
-      Symbol.iterator in child.value
-    ) {
+    if (isBruhIterable(child.value)) {
       const child_ = child as Reactive<Iterable<BruhChild>>
 
       range.setEndBefore(last)
@@ -234,21 +232,13 @@ export function * bruhChildrenToNodes(children: Iterable<BruhChild>): IterableIt
 
   for (const child of partiallyFlattened) {
     if (!isReactive(child)) {
-      if (
-        child != null &&
-        typeof child === "object" &&
-        Symbol.iterator in child
-      )
+      if (isBruhIterable(child))
         yield* bruhChildrenToNodes(child)
       else
         yield terminalBruhChildToNode(child)
     }
     else {
-      if (
-        child.value != null &&
-        typeof child.value === "object" &&
-        Symbol.iterator in child.value
-      )
+      if (isBruhIterable(child.value))
         yield* reactiveIterableBruhChildToNodes(child as Reactive<Iterable<BruhChild>>)
       else
         yield reactiveTerminalBruhChildToNode(child as Reactive<TerminalBruhChild>)
@@ -458,11 +448,7 @@ export const jsx: {
   if ("children" in props) {
     element.append(
       ...bruhChildrenToNodes(
-        (
-          props.children != null &&
-          typeof props.children === "object" &&
-          Symbol.iterator in props.children
-        )
+        isBruhIterable(props.children)
           ? props.children
           : [props.children]
       )
