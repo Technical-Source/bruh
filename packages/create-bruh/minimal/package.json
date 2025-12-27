@@ -8,6 +8,6 @@
     "serve": "^14.2.5"
   },
   "dependencies": {
-    "bruh": "^2.0.0-beta.1"
+    "bruh": "^2.0.0-beta.2"
   }
 }
