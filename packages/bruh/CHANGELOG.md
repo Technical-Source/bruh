@@ -1,5 +1,11 @@
 # bruh
 
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- 46105d5: Fix WeakRef chain
+
 ## 2.0.0-beta.2
 
 ### Patch Changes
