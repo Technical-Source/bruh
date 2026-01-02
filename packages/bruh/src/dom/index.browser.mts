@@ -148,15 +148,30 @@ const isBruhIterable = (x: unknown): x is Iterable<BruhChild> =>
   !(x instanceof Node) &&
   Symbol.iterator in x
 
+export const ownedReactivesSymbol = Symbol.for("bruh owned reactives")
+
+declare global {
+  interface Node {
+    [ownedReactivesSymbol]?: Set<Reactive<unknown>>
+  }
+}
+
 // Auto-swapping single reactive node
 const reactiveTerminalBruhChildToNode: {
   <Child extends TerminalBruhChild>(child: Reactive<Child>): TerminalBruhChildOutputNode<Child>
 } = (child: Reactive<TerminalBruhChild>): any => {
-  let node = terminalBruhChildToNode(child.value)
+  const node = terminalBruhChildToNode(child.value)
+
+  let ownedReactives = node[ownedReactivesSymbol] ??= new Set()
+  ownedReactives.add(child)
+
+  let nodeWeakRef = new WeakRef(node)
 
   const stopReacting = child.addReaction(() => {
+    const node = nodeWeakRef.deref()
+
     // Stop swapping if no longer possible
-    if (!node.parentNode) {
+    if (!node?.parentNode) {
       stopReacting()
       return
     }
@@ -164,14 +179,20 @@ const reactiveTerminalBruhChildToNode: {
     const oldNode = node as typeof node & ChildNode
     const child_ = child as Reactive<BruhChild>
 
+    ownedReactives.delete(child)
+
     // If an iterable now, stop swapping, then switch to reactive iterable swapping
     if (isBruhIterable(child.value)) {
       stopReacting()
-      oldNode.replaceWith(...reactiveIterableBruhChildToNodes(child_ as Reactive<Iterable<BruhChild>>))
+      const nodes = reactiveIterableBruhChildToNodes(child_ as Reactive<Iterable<BruhChild>>)
+      oldNode.replaceWith(...nodes)
     }
     // Normal swap
     else {
-      node = terminalBruhChildToNode(child_.value as TerminalBruhChild)
+      const node = terminalBruhChildToNode(child_.value as TerminalBruhChild)
+      ownedReactives = node[ownedReactivesSymbol] ??= new Set()
+      ownedReactives.add(child)
+      nodeWeakRef = new WeakRef(node)
       oldNode.replaceWith(node)
     }
   })
@@ -186,9 +207,18 @@ function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>
   const first = document.createComment("[")
   const last  = document.createComment("]")
 
+  let ownedReactives = first[ownedReactivesSymbol] ??= new Set()
+  ownedReactives.add(child)
+
+  let firstWeakRef = new WeakRef(first)
+  let lastWeakRef = new WeakRef(last)
+
   const stopReacting = child.addReaction(() => {
+    const first = firstWeakRef.deref()
+    const last = lastWeakRef.deref()
+
     // Stop swapping if there is no parent to swap within
-    if (!first.parentNode) {
+    if (!first?.parentNode || !last?.parentNode) {
       stopReacting()
       return
     }
@@ -207,6 +237,8 @@ function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>
     }
     // Switch to single swapping node by replacing everything
     else {
+      ownedReactives.delete(child)
+
       const child_ = child as unknown as Reactive<TerminalBruhChild>
 
       stopReacting()
@@ -265,9 +297,20 @@ export const applyStyles = <E extends ElementWithStyle>(
   element: E,
   styles:  StylesToApply
 ) => {
+  const ownedReactives = element[ownedReactivesSymbol] ??= new Set()
+  let elementWeakRef = new WeakRef(element)
+
   for (const property in styles) {
     const property_ = property as keyof StylesToApply
-    reactiveDo(styles[property_], value => {
+    const maybeReactive = styles[property_]
+    if (isReactive(maybeReactive))
+      ownedReactives.add(maybeReactive)
+
+    reactiveDo(maybeReactive, value => {
+      const element = elementWeakRef.deref()
+      if (!element)
+        return
+
       if (value != null && typeof value !== "boolean")
         element.style.setProperty   (property, value + "")
       else
@@ -284,11 +327,23 @@ export const applyClasses = (
   element: Element,
   classes: ClassesToApply
 ) => {
-  for (const name in classes)
-    reactiveDo(classes[name], value => {
+  const ownedReactives = element[ownedReactivesSymbol] ??= new Set()
+  let elementWeakRef = new WeakRef(element)
+
+  for (const name in classes) {
+    const maybeReactive = classes[name]
+    if (isReactive(maybeReactive))
+      ownedReactives.add(maybeReactive)
+
+    reactiveDo(maybeReactive, value => {
+      const element = elementWeakRef.deref()
+      if (!element)
+        return
+
       // without coercing to a boolean, `undefined` would toggle instead of forcing removal
       element.classList.toggle(name, value === true)
     })
+  }
 }
 
 /**
@@ -302,8 +357,19 @@ export const applyAttributes = <
   element:    ElementType<Name, NS>,
   attributes: AttributesToApply<Name, NS>
 ) => {
-  for (const name in attributes)
+  const ownedReactives = element[ownedReactivesSymbol] ??= new Set()
+  let elementWeakRef = new WeakRef(element)
+
+  for (const name in attributes) {
+    const maybeReactive = attributes[name]
+    if (isReactive(maybeReactive))
+      ownedReactives.add(maybeReactive)
+
     reactiveDo<ElementToAttributes<Name, NS>[typeof name] | LikelyAsBoolean>(attributes[name], value => {
+      const element = elementWeakRef.deref()
+      if (!element)
+        return
+
       if (typeof value === "boolean")
         element.toggleAttribute(name, value)
       else if (value != null)
@@ -311,6 +377,7 @@ export const applyAttributes = <
       else
         element.removeAttribute(name)
     })
+  }
 }
 
 //#endregion
