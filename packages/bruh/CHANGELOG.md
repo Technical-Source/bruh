@@ -1,5 +1,11 @@
 # bruh
 
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- e225949: Support nested reactives and custom equality checks
+
 ## 2.0.0-beta.3
 
 ### Patch Changes
