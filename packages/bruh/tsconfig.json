@@ -12,7 +12,7 @@
       "bruh/server/jsx-dev-runtime": ["./src/dom/server/jsx-runtime.mts"]
     },
 
-    "types": ["@vitest/browser/providers/playwright"],
+    "types": ["@vitest/browser/matchers"],
 
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,

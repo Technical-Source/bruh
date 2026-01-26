@@ -1,5 +1,5 @@
-import { isReactive, reactiveDo } from "../reactive/index.mts"
-import type { Reactive, MaybeReactive } from "../reactive/index.mts"
+import { isReactive, reactiveDo, flat } from "../reactive/index.mts"
+import type { Reactive, MaybeReactive, NestedReactive } from "../reactive/index.mts"
 import type {
   PropertyWiseOr,
   LikelyAsString,
@@ -37,14 +37,10 @@ export type TerminalBruhChildOutputNode<Child extends TerminalBruhChild>
     ? Comment
   : Node
 
-// disallow a reactive from directly holding a reactive
-export type FlatBruhChild =
-  | MaybeReactive<TerminalBruhChild>
-  | Reactive<TerminalBruhChild | Iterable<BruhChild>>
-
 export type BruhChild =
-  | FlatBruhChild
+  | MaybeReactive<TerminalBruhChild>
   | Iterable<BruhChild>
+  | NestedReactive<TerminalBruhChild | Iterable<BruhChild>>
 
 export type StylesToApply = {
   [Property in keyof Styles]: MaybeReactive<Styles[Property] | LikelyAsAbsent>
@@ -189,7 +185,7 @@ const reactiveTerminalBruhChildToNode: {
     }
     // Normal swap
     else {
-      const node = terminalBruhChildToNode(child_.value as TerminalBruhChild)
+      const node = terminalBruhChildToNode(child.value)
       ownedReactives = node[ownedReactivesSymbol] ??= new Set()
       ownedReactives.add(child)
       nodeWeakRef = new WeakRef(node)
@@ -211,11 +207,11 @@ function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>
   ownedReactives.add(child)
 
   let firstWeakRef = new WeakRef(first)
-  let lastWeakRef = new WeakRef(last)
+  let lastWeakRef  = new WeakRef(last)
 
   const stopReacting = child.addReaction(() => {
     const first = firstWeakRef.deref()
-    const last = lastWeakRef.deref()
+    const last  = lastWeakRef.deref()
 
     // Stop swapping if there is no parent to swap within
     if (!first?.parentNode || !last?.parentNode) {
@@ -223,28 +219,26 @@ function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>
       return
     }
 
+    const child_ = child as Reactive<BruhChild>
+
     // Make a range starting after the first marker
     const range = document.createRange()
     range.setStartAfter(first)
 
     // Normal swap, replacing content between the first and last markers
     if (isBruhIterable(child.value)) {
-      const child_ = child as Reactive<Iterable<BruhChild>>
-
       range.setEndBefore(last)
       range.deleteContents()
-      first.after(...bruhChildrenToNodes(child_.value))
+      first.after(...bruhChildrenToNodes(child.value))
     }
     // Switch to single swapping node by replacing everything
     else {
       ownedReactives.delete(child)
 
-      const child_ = child as unknown as Reactive<TerminalBruhChild>
-
       stopReacting()
       range.setEndAfter(last)
       range.deleteContents()
-      first.replaceWith(reactiveTerminalBruhChildToNode(child_))
+      first.replaceWith(reactiveTerminalBruhChildToNode(child_ as Reactive<TerminalBruhChild>))
     }
   })
 
@@ -270,10 +264,12 @@ export function * bruhChildrenToNodes(children: Iterable<BruhChild>): IterableIt
         yield terminalBruhChildToNode(child)
     }
     else {
-      if (isBruhIterable(child.value))
-        yield* reactiveIterableBruhChildToNodes(child as Reactive<Iterable<BruhChild>>)
+      const flattened = flat(child)
+
+      if (isBruhIterable(flattened.value))
+        yield* reactiveIterableBruhChildToNodes(flattened as Reactive<Iterable<BruhChild>>)
       else
-        yield reactiveTerminalBruhChildToNode(child as Reactive<TerminalBruhChild>)
+        yield reactiveTerminalBruhChildToNode(flattened as Reactive<TerminalBruhChild>)
     }
   }
 }

@@ -12,6 +12,9 @@
     "changeset:publish": "changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.8"
+    "@changesets/cli": "^2.29.8",
+    "@fast-check/vitest": "^0.2.4",
+    "@vitest/browser-playwright": "^4.0.18",
+    "fast-check": "^4.5.3"
   }
 }

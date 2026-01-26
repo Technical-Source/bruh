@@ -1,3 +1,5 @@
+import { attempt } from "../utils/index.mts"
+
 export const isReactiveSymbol = Symbol.for("bruh reactive")
 
 export const isReactive = (x: unknown): x is Reactive<unknown> =>
@@ -15,9 +17,11 @@ export interface Reactive<T> {
   addReaction(reaction: Reaction): StopReacting
 }
 
-export type Unreactive<T> = Exclude<T, { [isReactiveSymbol]: true }>
+export type Unreactive<T = unknown> = Exclude<T, { [isReactiveSymbol]: true }>
 
 export type MaybeReactive<T> = Reactive<T> | Unreactive<T>
+
+export type NestedReactive<T extends Unreactive> = Reactive<T | NestedReactive<T>>
 
 /**
  * A super simple and performant reactive value implementation
@@ -42,7 +46,7 @@ export class SimpleReactive<T> implements Reactive<T> {
 
     this.#value = newValue
     for (const reaction of this.#reactions)
-      try { reaction() } catch {}
+      attempt(reaction)
   }
 
   /**
@@ -55,6 +59,14 @@ export class SimpleReactive<T> implements Reactive<T> {
     return () =>
       this.#reactions.delete(reaction)
   }
+}
+
+export type IsEqual<T> = {
+  bivarianceHack(a: T, b: T): boolean
+}["bivarianceHack"]
+
+export type ReactiveOptions<T> = {
+  isEqual?: IsEqual<T>
 }
 
 export type SourceNode<T>     = FunctionalReactive<T, "source">
@@ -80,6 +92,8 @@ export class FunctionalReactive<T, U extends "source" | "derivative" = any> impl
       ? () => T
       : never
 
+  isEqual?: IsEqual<T>
+
   // Source nodes are 0 deep in the derivation graph
   // This is for topological sort
   #depth:
@@ -101,35 +115,36 @@ export class FunctionalReactive<T, U extends "source" | "derivative" = any> impl
   // A queue of reactions to run after the graph is fully updated
   static #reactionsQueue: Array<Reaction> = []
 
-  constructor(value: T)
+  constructor(value: T, options?: ReactiveOptions<T>)
   constructor(
     dependencies: ReadonlyArray<FunctionalReactive<unknown>>,
-    f: () => T
+    f: () => T,
+    options?: ReactiveOptions<T>
   )
   constructor(
-    x: T | ReadonlyArray<FunctionalReactive<unknown>>,
-    f?: undefined | (() => T)
+    xOrDependencies: T | ReadonlyArray<FunctionalReactive<unknown>>,
+    optionsOrF?: ReactiveOptions<T> | (() => T),
+    options?: ReactiveOptions<T>
   ) {
     // No derivation function means this is a source node
-    if (!f) {
+    if (typeof optionsOrF !== "function") {
       const this_ = this as SourceNode<T>
-      const value = x as T
+      const value = xOrDependencies as T
+      const options = optionsOrF as ReactiveOptions<T> | undefined
 
       this_.#value = value
+      this_.isEqual = options?.isEqual
       return
     }
 
     // Derived node
     const this_ = this as DerivativeNode<T>
-    const dependencies = x as ReadonlyArray<FunctionalReactive<unknown>>
+    const dependencies = xOrDependencies as ReadonlyArray<FunctionalReactive<unknown>>
+    const f = optionsOrF as () => T
 
-    try {
-      this_.#value = f()
-    }
-    catch (e: any) {
-      this_.#value = e
-    }
+    this_.#value = attempt(f)
     this_.#f = f
+    this_.isEqual = options?.isEqual
 
     this_.#depth = Math.max(0, ...dependencies.map(dependency => dependency.#depth)) + 1
 
@@ -163,7 +178,11 @@ export class FunctionalReactive<T, U extends "source" | "derivative" = any> impl
 
     const this_ = this as SourceNode<T>
 
-    if (newValue === this.#value) {
+    const isEqual = this.isEqual
+      ? this.isEqual(newValue, this.#value)
+      : newValue === this.#value
+
+    if (isEqual) {
       FunctionalReactive.#settersQueue.delete(this_)
       return
     }
@@ -188,7 +207,11 @@ export class FunctionalReactive<T, U extends "source" | "derivative" = any> impl
 
   // Apply an update for a node and queue its derivatives if it actually changed
   #applyUpdate(newValue: T) {
-    if (newValue === this.#value)
+    const isEqual = this.isEqual
+      ? this.isEqual(newValue, this.#value)
+      : newValue === this.#value
+
+    if (isEqual)
       return
 
     this.#value = newValue
@@ -222,17 +245,17 @@ export class FunctionalReactive<T, U extends "source" | "derivative" = any> impl
     // Note that both the queue (Array) and each depth Set iterators update as items are added
     for (const depthSet of FunctionalReactive.#derivativesQueue) if (depthSet)
       for (const derivative of depthSet)
-        try {
-          derivative.#applyUpdate(derivative.#f())
-        }
-        catch (e) {
-          derivative.#applyUpdate(e)
-        }
+        derivative.#applyUpdate(
+          attempt(() =>
+            derivative.#f()
+          )
+        )
+
     FunctionalReactive.#derivativesQueue.length = 0
 
     // Call all reactions now that the graph has a fully consistent state
     for (const reaction of FunctionalReactive.#reactionsQueue)
-      try { reaction() } catch {}
+      attempt(reaction)
     FunctionalReactive.#reactionsQueue.length = 0
   }
 }
@@ -246,25 +269,27 @@ type R = {
   /**
    * A source node
    */
-  <T>(value: T): SourceNode<T>
+  <T>(value: T, options?: ReactiveOptions<T>): SourceNode<T>
 
   /**
    * A derived node
    */
   <T>(
     dependencies: ReadonlyArray<FunctionalReactive<unknown>>,
-    f: () => T
+    f: () => T,
+    options?: ReactiveOptions<T>
   ): DerivativeNode<T>
 }
 /**
  * A convenient wrapper for FunctionalReactive
  */
 export const r: R = <T extends unknown>(
-  x?: T | ReadonlyArray<FunctionalReactive<unknown>>,
-  f?: undefined | (() => T)
+  xOrDependencies?: T | ReadonlyArray<FunctionalReactive<unknown>>,
+  optionsOrF?: ReactiveOptions<T> | (() => T),
+  options?: ReactiveOptions<T>
 ) =>
   // @ts-ignore
-  new FunctionalReactive(x, f)
+  new FunctionalReactive(xOrDependencies, optionsOrF, options)
 
 type ReactiveDo = {
   /**
@@ -307,4 +332,50 @@ export const reactiveDo: ReactiveDo = <T extends unknown>(
   }
 
   f(x)
+}
+
+export const flat = <T extends Unreactive>(source: NestedReactive<T>): FunctionalReactive<T> => {
+  const chain: Array<{
+    reactive: NestedReactive<T>,
+    stopReacting: StopReacting
+  }> = []
+
+  const reactive = new FunctionalReactive<T>(undefined as T)
+
+  const reaction = () => {
+    let lastInCommon: NestedReactive<T> = source
+    let i = 0
+    while (lastInCommon.value === chain[i + 1]?.reactive) {
+      lastInCommon = lastInCommon.value as NestedReactive<T>
+      i++
+    }
+
+    if (i + 1 < chain.length) {
+      for (let j = i + 1; j < chain.length; j++)
+        chain[j].stopReacting()
+
+      chain.length = i
+    }
+
+    updateChain(lastInCommon.value)
+  }
+
+  const updateChain = (newStart: T | NestedReactive<T>) => {
+    while (isReactive(newStart)) {
+      chain.push({
+        reactive: newStart,
+        stopReacting: newStart.addReaction(reaction)
+      })
+      newStart = newStart.value
+    }
+
+    const innerMost = chain[chain.length - 1].reactive as Reactive<T>
+    reactive.isEqual = (innerMost as FunctionalReactive<T>).isEqual
+    reactive.value = innerMost.value
+    FunctionalReactive.applyUpdates()
+  }
+
+  updateChain(source)
+
+  return reactive
 }

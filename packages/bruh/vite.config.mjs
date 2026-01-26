@@ -2,6 +2,7 @@ import { defineConfig } from "vite"
 import nodeExternals from "rollup-plugin-node-externals"
 import dts from "vite-plugin-dts"
 import tsconfigPaths from "vite-tsconfig-paths"
+import { playwright } from "@vitest/browser-playwright"
 import exportToSource from "./exportToSource.mjs"
 
 export default defineConfig({
@@ -31,7 +32,7 @@ export default defineConfig({
     include: [
       "./src/**/*.test.{mts,tsx}"
     ],
-    workspace: [
+    projects: [
       {
         extends: true,
         test: {
@@ -53,7 +54,7 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: "playwright",
+            provider: playwright(),
             instances: [
               { browser: "chromium" },
               { browser: "webkit" },
