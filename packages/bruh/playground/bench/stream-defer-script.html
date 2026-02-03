@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+  <head>
+    <script>
+      "use strict"
+      const _bruhReplaceDeferred = id => {
+        const script = document.currentScript
+        const template = script.previousElementSibling
+        document.getElementById(id).replaceWith(template.content)
+        template.remove()
+        script.remove()
+      }
+    </script>
+  </head>
+  <body>
+    <span id="bruh-deferred-script-0">loading...</span>
+    <span id="bruh-deferred-script-1">loading...</span>
+    <span id="bruh-deferred-script-2">loading...</span>
+    <span id="bruh-deferred-script-3">loading...</span>
+    <span id="bruh-deferred-script-4">loading...</span>
+    <span id="bruh-deferred-script-5">loading...</span>
+    <span id="bruh-deferred-script-6">loading...</span>
+    <span id="bruh-deferred-script-7">loading...</span>
+    <span id="bruh-deferred-script-8">loading...</span>
+    <span id="bruh-deferred-script-9">loading...</span>
+
+    <script>console.time("script-0")</script>
+    <template>script-0</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-0")
+    </script>
+    <script>console.timeEnd("script-0")</script>
+
+    <script>console.time("script-1")</script>
+    <template>script-1</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-1")
+    </script>
+    <script>console.timeEnd("script-1")</script>
+
+    <script>console.time("script-2")</script>
+    <template>script-2</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-2")
+    </script>
+    <script>console.timeEnd("script-2")</script>
+
+    <script>console.time("script-3")</script>
+    <template>script-3</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-3")
+    </script>
+    <script>console.timeEnd("script-3")</script>
+
+    <script>console.time("script-4")</script>
+    <template>script-4</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-4")
+    </script>
+    <script>console.timeEnd("script-4")</script>
+
+    <script>console.time("script-5")</script>
+    <template>script-5</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-5")
+    </script>
+    <script>console.timeEnd("script-5")</script>
+
+    <script>console.time("script-6")</script>
+    <template>script-6</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-6")
+    </script>
+    <script>console.timeEnd("script-6")</script>
+
+    <script>console.time("script-7")</script>
+    <template>script-7</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-7")
+    </script>
+    <script>console.timeEnd("script-7")</script>
+
+    <script>console.time("script-8")</script>
+    <template>script-8</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-8")
+    </script>
+    <script>console.timeEnd("script-8")</script>
+
+    <script>console.time("script-9")</script>
+    <template>script-9</template>
+    <script>
+      "use script"
+      _bruhReplaceDeferred("bruh-deferred-script-9")
+    </script>
+    <script>console.timeEnd("script-9")</script>
+  </body>
+</html>

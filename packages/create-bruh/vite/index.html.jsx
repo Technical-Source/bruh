@@ -1,3 +1,4 @@
+/** @jsxImportSource bruh/server */
 import Shell from "./shell"
 import Counter from "./components/counter/render"
 

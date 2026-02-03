@@ -1,10 +1,20 @@
 {
   "name": "vite-plugin-bruh",
-  "version": "0.6.0",
+  "version": "2.0.0-beta.1",
   "description": "A vite plugin to integrate with bruh",
   "type": "module",
-  "main": "./index.mjs",
-  "scripts": {},
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "prepare": "npm run build",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
   "homepage": "https://github.com/Technical-Source/bruh/tree/main/packages/vite-plugin-bruh#readme",
   "bugs": "https://github.com/Technical-Source/bruh/issues",
   "repository": {
@@ -23,9 +33,15 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "vite": "^2.6.10"
+    "vite": "^7.3.0"
   },
   "dependencies": {
-    "xdm": "^3.1.0"
+    "@mdx-js/rollup": "^3.1.1"
+  },
+  "devDependencies": {
+    "rollup-plugin-node-externals": "^8.1.2",
+    "vite": "^7.3.0",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-tsconfig-paths": "^6.0.3"
   }
 }

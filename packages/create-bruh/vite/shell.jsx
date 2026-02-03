@@ -1,3 +1,6 @@
+/** @jsxImportSource bruh/server */
+import { MetaDocument } from "bruh/server"
+
 export default async ({
   title = "",
   description = "",
@@ -5,30 +8,34 @@ export default async ({
   css = [],
   js = [],
   children
-}) =>
-  "<!doctype html>" +
-  <html lang="en-US">
-    <head>
-      <title>{ title }</title>
-      <meta name="description" content={ description } />
+}) => {
+  const metaDocument = new MetaDocument(
+    <html lang="en-US">
+      <head>
+        <title>{ title }</title>
+        <meta name="description" content={ description } />
 
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      {
-        css.map(href =>
-          <link rel="stylesheet" href={ href } />
-        )
-      }
+        {
+          css.map(href =>
+            <link rel="stylesheet" href={ href } />
+          )
+        }
 
-      {
-        js.map(src =>
-          <script type="module" src={ src } />
-        )
-      }
+        {
+          js.map(src =>
+            <script type="module" src={ src } />
+          )
+        }
 
-      <InHead />
-    </head>
+        <InHead />
+      </head>
 
-    <body>{ children }</body>
-  </html>
+      <body>{ children }</body>
+    </html>
+  )
+
+  return metaDocument.toStringPromise()
+}

@@ -1,46 +1,17 @@
-import fs from "fs/promises"
-import path from "path"
-import vite from "vite"
-import { compile } from "xdm"
+import fs from "node:fs/promises"
+import type { Dirent } from "node:fs"
+import path from "node:path"
+import { createServer, type Plugin, type ResolvedConfig, type ViteDevServer } from "vite"
+import mdx, { type Options as MDXOptions } from "@mdx-js/rollup"
 
-const mdx = ({ xdmOptions } = {}) => {
-  return {
-    name: "bruh:mdx",
-    enforce: "pre",
-
-    async transform(source, id) {
-      if (!id.endsWith(".mdx"))
-        return
-
-      const result = await compile(source, {
-        jsxRuntime: "classic",
-        pragma: "h",
-        pragmaFrag: "JSXFragment",
-        ...xdmOptions
-      })
-
-      const code = result.value
-        .replace(
-          `import h from "react"`,
-          `import { h, JSXFragment } from "bruh/dom"`
-        )
-        .replace(
-          /classname/igm,
-          "class"
-        )
-
-      return {
-        code,
-        map: { mappings: "" }
-      }
-    }
-  }
-}
-
-const excludeEntry = (entry, directory) =>
+const excludeEntry = (entry: Dirent, directory?: string) =>
   entry.isDirectory() && entry.name == "node_modules"
 
-const getHtmlRenderFiles = async (directory, htmlRenderFileExtention, maxDepth = Infinity) => {
+const getHtmlRenderFiles = async (
+  directory: string,
+  htmlRenderFileExtention: RegExp,
+  maxDepth = Infinity
+): Promise<string[]> => {
   if (maxDepth < 1)
     return []
 
@@ -69,18 +40,50 @@ const getHtmlRenderFiles = async (directory, htmlRenderFileExtention, maxDepth =
   }
 }
 
-export const bruhDev = ({ htmlRenderFileExtention, root } = {}) => {
-  let config = {}
+type HtmlRenderFileComponentsExport = {
+  [componentName: string]: unknown
+}
+type HtmlRenderFileDefaultExport = (
+  props?: {
+    components?: HtmlRenderFileComponentsExport,
+  }
+) => unknown
 
-  const urlToHtmlRenderFile = async url => {
+type HtmlRenderFileModule = {
+  default?: HtmlRenderFileDefaultExport,
+  components?: HtmlRenderFileComponentsExport
+}
+
+const renderHtml = async (viteDevServer: ViteDevServer, htmlRenderFile: string | undefined) => {
+  if (!htmlRenderFile)
+    return
+
+  const module: HtmlRenderFileModule = await viteDevServer.ssrLoadModule(htmlRenderFile)
+  const { default: render, components } = module
+  const rendered = await render?.({ components })
+  if (rendered)
+    return rendered + ""
+}
+
+export const bruhDev = ({
+  htmlRenderFileExtention,
+  root
+}: {
+  htmlRenderFileExtention: RegExp
+  root?: string
+}): Plugin => {
+  let config: ResolvedConfig
+
+  const urlToHtmlRenderFile = async (url = "") => {
     const resolvedRoot = root || path.resolve(config.root || "")
     const pathname = path.join(resolvedRoot, path.normalize(url))
     const htmlRenderFiles = await getHtmlRenderFiles(path.dirname(pathname), htmlRenderFileExtention, 2)
     for (const htmlRenderFile of htmlRenderFiles) {
       const htmlRenderFileName = htmlRenderFile.replace(htmlRenderFileExtention, "")
-      if (htmlRenderFileName == pathname)
-        return htmlRenderFile
-      if (htmlRenderFileName == path.join(pathname, "index"))
+      if (
+        htmlRenderFileName === pathname ||
+        htmlRenderFileName === path.join(pathname, "index")
+      )
         return htmlRenderFile
     }
   }
@@ -98,17 +101,18 @@ export const bruhDev = ({ htmlRenderFileExtention, root } = {}) => {
       viteDevServer.middlewares.use(async (req, res, next) => {
         try {
           const htmlRenderFile = await urlToHtmlRenderFile(req.url)
-          if (htmlRenderFile) {
-            const { default: render } = await viteDevServer.ssrLoadModule(htmlRenderFile)
-            const rendered = await render()
-            const transformedHTML = await viteDevServer.transformIndexHtml(req.url, rendered.toString())
+          const rendered = await renderHtml(viteDevServer, htmlRenderFile)
+          if (rendered) {
+            const transformedHTML = await viteDevServer.transformIndexHtml(req.url ?? "", rendered + "")
 
             res.setHeader("Content-Type", "text/html")
             return res.end(transformedHTML)
           }
           next()
         }
-        catch (error) {
+        catch (e) {
+          const error = e as Error
+
           viteDevServer.ssrFixStacktrace(error)
           console.error(error)
 
@@ -120,10 +124,16 @@ export const bruhDev = ({ htmlRenderFileExtention, root } = {}) => {
   }
 }
 
-export const bruhBuild = ({ htmlRenderFileExtention, root } = {}) => {
-  let viteDevServer
+export const bruhBuild = ({
+  htmlRenderFileExtention,
+  root
+}: {
+  htmlRenderFileExtention: RegExp
+  root?: string
+}): Plugin => {
+  let viteDevServer: ViteDevServer
 
-  const idToHtmlRenderFile = {}
+  const idToHtmlRenderFile = new Map<string, string>()
 
   return {
     name: "bruh:build",
@@ -131,25 +141,26 @@ export const bruhBuild = ({ htmlRenderFileExtention, root } = {}) => {
     enforce: "pre",
 
     async buildStart() {
-      viteDevServer = await vite.createServer()
+      viteDevServer = await createServer()
     },
 
     async resolveId(source) {
-      if (htmlRenderFileExtention.test(source)) {
-        const id = source.replace(htmlRenderFileExtention, ".html")
-        idToHtmlRenderFile[id] = source
-        return id
-      }
+      if (!htmlRenderFileExtention.test(source))
+        return
+
+      const id = source.replace(htmlRenderFileExtention, ".html")
+      idToHtmlRenderFile.set(id, source)
+      return id
     },
 
     async load(id) {
-      if (!idToHtmlRenderFile[id])
+      const htmlRenderFile = idToHtmlRenderFile.get(id)
+      if (!htmlRenderFile)
         return
 
-      const { default: render } = await viteDevServer.ssrLoadModule(idToHtmlRenderFile[id])
-      const rendered = await render()
+      const rendered = await renderHtml(viteDevServer, htmlRenderFile)
       return {
-        code: rendered,
+        code: rendered ?? "",
         map: ""
       }
     },
@@ -182,16 +193,14 @@ export const bruhBuild = ({ htmlRenderFileExtention, root } = {}) => {
   }
 }
 
-export const bruhJSX = () => {
+export const bruhJSX = (): Plugin => {
   return {
     name: "bruh:jsx",
 
     config() {
       return {
         esbuild: {
-          jsxFactory: "h",
-          jsxFragment: "JSXFragment",
-          jsxInject: `import { h, JSXFragment } from "bruh/dom"`
+          jsx: "automatic"
         }
       }
     }
@@ -199,14 +208,21 @@ export const bruhJSX = () => {
 }
 
 export const bruh = ({
-  htmlRenderFileExtention = /\.html\.(mjs|jsx?|tsx?)$/,
+  htmlRenderFileExtention = /\.html\.(m?[jt]sx?|mdx?)?$/,
   root,
-  xdmOptions = {}
+  mdxOptions = {}
+}: {
+  htmlRenderFileExtention?: RegExp
+  root?: string
+  mdxOptions?: MDXOptions
 } = {}) =>
   [
     mdx({
-      xdmOptions
-    }),
+      ...mdxOptions,
+      jsxRuntime: "automatic",
+      jsxImportSource: "bruh/server",
+      elementAttributeNameCase: "html"
+    }) as Plugin,
     bruhDev({
       htmlRenderFileExtention,
       root

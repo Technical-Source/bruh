@@ -1,0 +1,22 @@
+{
+  "include": ["./src/"],
+
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+
+    "strict": true,
+    "isolatedModules": true,
+
+    "declaration": true,
+    "emitDeclarationOnly": true,
+
+    "skipLibCheck": true
+  }
+}

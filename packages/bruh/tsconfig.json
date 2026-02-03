@@ -1,0 +1,36 @@
+{
+  "include": ["./src/"],
+
+  "compilerOptions": {
+    "paths": {
+      "bruh/browser": ["./src/dom/index.browser.mts"],
+      "bruh/browser/jsx-runtime": ["./src/dom/browser/jsx-runtime.mts"],
+      "bruh/browser/jsx-dev-runtime": ["./src/dom/browser/jsx-runtime.mts"],
+
+      "bruh/server": ["./src/dom/index.server.mts"],
+      "bruh/server/jsx-runtime": ["./src/dom/server/jsx-runtime.mts"],
+      "bruh/server/jsx-dev-runtime": ["./src/dom/server/jsx-runtime.mts"]
+    },
+
+    "types": ["@vitest/browser/matchers"],
+
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "ESNext.Intl"],
+
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "isolatedModules": true,
+
+    "declaration": true,
+    "emitDeclarationOnly": true,
+
+    "skipLibCheck": true
+  }
+}

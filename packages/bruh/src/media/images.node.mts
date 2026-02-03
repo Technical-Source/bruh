@@ -1,20 +1,25 @@
 import sharp from "sharp"
-import { readdir, writeFile } from "fs/promises"
-import { extname, join } from "path"
+import { readdir, writeFile } from "node:fs/promises"
+import { extname, join } from "node:path"
 
-const avif = async (filePath, sharpInstance) =>
+const avif = async (filePath: string, sharpInstance: sharp.Sharp) =>
   sharpInstance
     .avif({  })
     .toFile(`${filePath}.avif`)
 
-const webp = async (filePath, sharpInstance) =>
+const webp = async (filePath: string, sharpInstance: sharp.Sharp) =>
   sharpInstance
     .webp({  })
     .toFile(`${filePath}.webp`)
 
 // Low Quality Image Placeholder inline css for the <img> style attribute
-const json = async (filePath, sharpInstance) => {
-  const imageManifest = {}
+const json = async (filePath: string, sharpInstance: sharp.Sharp) => {
+  const imageManifest: {
+    format: sharp.Metadata["format"]
+    width: sharp.Metadata["width"]
+    height: sharp.Metadata["height"]
+    lqip: string
+  } = {} as any
 
   const metadata = await sharpInstance.metadata()
   imageManifest.format = metadata.format
@@ -24,16 +29,16 @@ const json = async (filePath, sharpInstance) => {
   const buffer = await sharpInstance
     .resize({ fit: "inside", width: 16, height: 16 })
     .blur()
-    .webp({ reductionEffort: 6 })
+    .webp({ effort: 6 })
     .toBuffer()
 
   imageManifest.lqip = `data:image/webp;base64,${buffer.toString("base64")}`
   return writeFile(`${filePath}.json`, JSON.stringify(imageManifest))
 }
 
-const getUnprocessedImages = async directory => {
+const getUnprocessedImages = async (directory: string): Promise<string[]> => {
   const directoryEntries = await readdir(directory, { withFileTypes: true })
-  
+
   const promisedUnproccessedImages = directoryEntries
     .map(async entry => {
       const entryPath = join(directory, entry.name)
@@ -55,11 +60,11 @@ const getUnprocessedImages = async directory => {
 
       return [entryPath]
     })
-  
+
   return (await Promise.all(promisedUnproccessedImages)).flat()
 }
 
-export const processImages = async directory => {
+export const processImages = async (directory: string) => {
   const unprocessedImages = await getUnprocessedImages(directory)
   for (const filePath of unprocessedImages) {
     await Promise.all(

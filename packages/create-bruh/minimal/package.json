@@ -1,12 +1,13 @@
 {
+  "private": true,
   "name": "create-bruh-template-minimal",
   "scripts": {
     "dev": "serve"
   },
   "devDependencies": {
-    "serve": "^14.0.1"
+    "serve": "^14.2.5"
   },
   "dependencies": {
-    "bruh": "^1.13.0"
+    "bruh": "^2.0.0-beta.5"
   }
 }

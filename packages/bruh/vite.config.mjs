@@ -1,12 +1,95 @@
 import { defineConfig } from "vite"
+import nodeExternals from "rollup-plugin-node-externals"
+import dts from "vite-plugin-dts"
+import tsconfigPaths from "vite-tsconfig-paths"
+import { playwright } from "@vitest/browser-playwright"
+import exportToSource from "./exportToSource.mjs"
 
 export default defineConfig({
   build: {
     lib: {
-      name: "bruh",
-      entry: new URL("./src/index.browser.mjs", import.meta.url).pathname,
-      fileName: format => `bruh.${format}.js`
+      formats: ["es"],
+      entry: exportToSource,
+      fileName: (format, name) => `${name}.mjs`
     },
-    sourcemap: true
+    sourcemap: true,
+    minify: false,
+    reportCompressedSize: false,
+    target: "esnext"
+  },
+  plugins: [
+    nodeExternals(),
+    tsconfigPaths(),
+    dts({
+      outDir: "./dist/types/",
+      exclude: [
+        "./src/**/*.test.*",
+        "./src/**/*.bench.*"
+      ]
+    })
+  ],
+  test: {
+    include: [
+      "./src/**/*.test.{mts,tsx}"
+    ],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "node",
+          exclude: [
+            "./src/**/*.browser.test.*",
+            "./src/**/*.test-d.*"
+          ],
+          benchmark: {
+            exclude: [
+              "./src/**/*.browser.bench.*"
+            ]
+          },
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: "browser",
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [
+              { browser: "chromium" },
+              { browser: "webkit" },
+              { browser: "firefox" }
+            ]
+          },
+          exclude: [
+            "./src/**/*.server.test.*",
+            "./src/**/*.test-d.*"
+          ],
+          benchmark: {
+            exclude: [
+              "./src/**/*.server.bench.*"
+            ]
+          }
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: "typecheck",
+          include: [
+            "./src/**/*.test-d.mts"
+          ],
+          typecheck: {
+            enabled: true,
+            only: true,
+            ignoreSourceErrors: true,
+            include: [
+              "./src/**/*.test-d.mts"
+            ]
+          }
+        }
+      }
+    ]
   }
 })

@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <script>
+      "use strict"
+      customElements.define("bruh-deferred", class extends HTMLElement {
+        connectedCallback() {
+          const template = this.previousElementSibling
+          document.getElementById(this.dataset.replace).replaceWith(template.content)
+          template.remove()
+          this.remove()
+        }
+      })
+    </script>
+  </head>
+  <body>
+    <span id="bruh-deferred-custom-0">loading...</span>
+    <span id="bruh-deferred-custom-1">loading...</span>
+    <span id="bruh-deferred-custom-2">loading...</span>
+    <span id="bruh-deferred-custom-3">loading...</span>
+    <span id="bruh-deferred-custom-4">loading...</span>
+    <span id="bruh-deferred-custom-5">loading...</span>
+    <span id="bruh-deferred-custom-6">loading...</span>
+    <span id="bruh-deferred-custom-7">loading...</span>
+    <span id="bruh-deferred-custom-8">loading...</span>
+    <span id="bruh-deferred-custom-9">loading...</span>
+
+    <script>console.time("custom-0")</script>
+    <template>custom-0</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-0"></bruh-deferred>
+    <script>console.timeEnd("custom-0")</script>
+
+    <script>console.time("custom-1")</script>
+    <template>custom-1</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-1"></bruh-deferred>
+    <script>console.timeEnd("custom-1")</script>
+
+    <script>console.time("custom-2")</script>
+    <template>custom-2</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-2"></bruh-deferred>
+    <script>console.timeEnd("custom-2")</script>
+
+    <script>console.time("custom-3")</script>
+    <template>custom-3</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-3"></bruh-deferred>
+    <script>console.timeEnd("custom-3")</script>
+
+    <script>console.time("custom-4")</script>
+    <template>custom-4</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-4"></bruh-deferred>
+    <script>console.timeEnd("custom-4")</script>
+
+    <script>console.time("custom-5")</script>
+    <template>custom-5</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-5"></bruh-deferred>
+    <script>console.timeEnd("custom-5")</script>
+
+    <script>console.time("custom-6")</script>
+    <template>custom-6</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-6"></bruh-deferred>
+    <script>console.timeEnd("custom-6")</script>
+
+    <script>console.time("custom-7")</script>
+    <template>custom-7</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-7"></bruh-deferred>
+    <script>console.timeEnd("custom-7")</script>
+
+    <script>console.time("custom-8")</script>
+    <template>custom-8</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-8"></bruh-deferred>
+    <script>console.timeEnd("custom-8")</script>
+
+    <script>console.time("custom-9")</script>
+    <template>custom-9</template>
+    <bruh-deferred data-replace="bruh-deferred-custom-9"></bruh-deferred>
+    <script>console.timeEnd("custom-9")</script>
+  </body>
+</html>

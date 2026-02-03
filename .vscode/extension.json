@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "vitest.explorer",
+    "rbuckton.deoptexplorer-vscode",
+    "mhutchie.git-graph",
+    "YoavBls.pretty-ts-errors"
+  ]
+}
