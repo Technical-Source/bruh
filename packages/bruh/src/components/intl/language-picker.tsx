@@ -1,11 +1,11 @@
 /** @jsxImportSource bruh/browser */
 import type { BruhChild } from "bruh/browser"
-import { r, type FunctionalReactive } from "../../reactive/index.mts"
+import { r, type Reactive } from "../../reactive/index.mts"
 import { spaceSeparated } from "../utils.mts"
 import { BruhCustomElementBase } from "../custom-elements.mts"
 import { inferDirection, languageDisplayName, bestAvailableLocales, parseLocales, userLanguages, languagePickerLanguages, type InputLocale } from "./utils.mts"
 
-const userLanguageDisplayNames = r([userLanguages], () =>
+const userLanguageDisplayNames = r(() =>
   new Intl.DisplayNames(userLanguages.value, { type: "language" })
 )
 
@@ -22,16 +22,42 @@ type Option = {
   }
 }
 
+const makeOptionElement = ({ native, current }: Option) => {
+  const currentElement = <bdi lang={current.language} dir={current.direction}>{current.name}</bdi> as HTMLElement
+
+  let friendly: BruhChild
+  if (native.name === undefined || native.name === current.name)
+    friendly = currentElement
+  else {
+    const nativeElement = <bdi lang={native.language} dir={native.direction}>{native.name}</bdi> as HTMLElement
+    friendly = <>{nativeElement} — {currentElement}</>
+  }
+
+  const isSelected = r(() => native.language === userLanguages.value[0] + "" || undefined)
+
+  const directionOverride =
+    native.name && native.direction !== current.direction
+      ? native.direction
+      : undefined
+
+  const option: HTMLOptionElement =
+    <option value={native.language} selected={isSelected} dir={directionOverride}>
+      {friendly}
+    </option>
+
+  return option
+}
+
 const SelectLanguage = (
   {
     languages,
     name = "language"
   }: {
-    languages: FunctionalReactive<ReadonlyArray<InputLocale>>,
+    languages: Reactive<ReadonlyArray<InputLocale>>,
     name?: string
   }
 ) => {
-  const options = r([languages, userLanguages, userLanguageDisplayNames], () => {
+  const options = r(() => {
     const currentLanguage = userLanguageDisplayNames.value.resolvedOptions().locale
     const currentDirection = inferDirection(currentLanguage)
 
@@ -69,33 +95,7 @@ const SelectLanguage = (
     }
   })
 
-  const selectOptions = r([options], () => {
-    const makeOptionElement = ({ native, current }: Option) => {
-      const currentElement = <bdi lang={current.language} dir={current.direction}>{current.name}</bdi> as HTMLElement
-
-      let friendly: BruhChild
-      if (native.name === undefined || native.name === current.name)
-        friendly = currentElement
-      else {
-        const nativeElement = <bdi lang={native.language} dir={native.direction}>{native.name}</bdi> as HTMLElement
-        friendly = <>{nativeElement} — {currentElement}</>
-      }
-
-      const isSelected = r([userLanguages], () => native.language === userLanguages.value[0] + "" || undefined)
-
-      const directionOverride =
-        native.name && native.direction !== current.direction
-          ? native.direction
-          : undefined
-
-      const option =
-        <option value={native.language} selected={isSelected} dir={directionOverride}>
-          {friendly}
-        </option> as HTMLOptionElement
-
-      return option
-    }
-
+  const selectOptions = r(() => {
     const matches = options.value.matches.map(makeOptionElement)
     const alsoAvailable = options.value.alsoAvailable.map(makeOptionElement)
 
@@ -126,7 +126,7 @@ export class BruhLanguagePicker extends BruhCustomElementBase<BruhLanguagePicker
     }
   }
 
-  #languages = r([this.bruh.attributes.languages], () => parseLocales(this.bruh.attributes.languages.value))
+  #languages = r(() => parseLocales(this.bruh.attributes.languages.value))
 
   #select
 

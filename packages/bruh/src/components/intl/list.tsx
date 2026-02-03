@@ -40,7 +40,7 @@ export class BruhList extends BruhCustomElementBase<BruhListAttributes> {
   constructor() {
     super()
 
-    this.#locales = r([this.bruh.attributes.locales, userLanguages], () =>
+    this.#locales = r(() =>
       parseLocales([
         ...this.bruh.attributes.locales.value ?? [],
         ...userLanguages.value
@@ -54,7 +54,7 @@ export class BruhList extends BruhCustomElementBase<BruhListAttributes> {
       mapObject(optionToReactiveAttribute, ([option, attribute]) => [option, attribute.value || undefined]) as Partial<Intl.ListFormatOptions>
     )
 
-    this.#formatter = r([this.#locales, this.#options], () =>
+    this.#formatter = r(() =>
       attempt(() => new Intl.ListFormat(this.#locales.value, this.#options.value))
         ?? new Intl.ListFormat(this.#locales.value)
     )
@@ -68,7 +68,7 @@ export class BruhList extends BruhCustomElementBase<BruhListAttributes> {
           : <span part={partAttribute}>{part.value}</span> as HTMLSpanElement
       })
 
-    this.#formatted = r([this.#formatter, this.#itemSlotNames], () => {
+    this.#formatted = r(() => {
       if (!this.#itemSlotNames.value)
         return
 

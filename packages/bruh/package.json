@@ -10,7 +10,7 @@
     "library",
     "modern"
   ],
-  "version": "2.0.0-beta.4",
+  "version": "2.0.0-beta.5",
   "license": "MIT",
   "author": {
     "name": "Daniel Ethridge",
@@ -89,6 +89,10 @@
     "./components/utils": {
       "types": "./dist/types/components/utils.d.mts",
       "default": "./dist/components/utils.mjs"
+    },
+    "./components/misc": {
+      "types": "./dist/types/components/misc.d.mts",
+      "default": "./dist/components/misc.mjs"
     },
     "./components/custom-elements": {
       "types": "./dist/types/components/custom-elements.d.mts",

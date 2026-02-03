@@ -21,6 +21,7 @@ export default {
   "components/optimized-picture/hydrate": src("./src/components/optimized-picture/hydrate.mts"),
 
   "components/utils": src("./src/components/utils.mts"),
+  "components/misc": src("./src/components/misc.mts"),
   "components/custom-elements": src("./src/components/custom-elements.mts"),
 
   "components/intl/utils": src("./src/components/intl/utils.mts"),

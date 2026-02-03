@@ -88,7 +88,7 @@ export class BruhNumber extends BruhCustomElementBase<BruhNumberAttributes> {
   constructor() {
     super()
 
-    this.#locales = r([this.bruh.attributes.locales, userLanguages], () =>
+    this.#locales = r(() =>
       parseLocales([
         ...this.bruh.attributes.locales.value ?? [],
         ...userLanguages.value
@@ -102,7 +102,7 @@ export class BruhNumber extends BruhCustomElementBase<BruhNumberAttributes> {
       mapObject(optionToReactiveAttribute, ([option, attribute]) => [option, attribute.value || undefined]) as Partial<Intl.NumberFormatOptions>
     )
 
-    this.#formatter = r([this.#locales, this.#options], () =>
+    this.#formatter = r(() =>
       attempt(() => new Intl.NumberFormat(this.#locales.value, this.#options.value))
         ?? new Intl.NumberFormat(this.#locales.value)
     )
@@ -148,7 +148,7 @@ export class BruhNumber extends BruhCustomElementBase<BruhNumberAttributes> {
       )
     }
 
-    this.#formatted = r([this.#formatter, numberToFormat, rangeEndNumberToFormat], () => {
+    this.#formatted = r(() => {
       if (!numberToFormat.value)
         return
 

@@ -38,7 +38,8 @@ export default defineConfig({
         test: {
           name: "node",
           exclude: [
-            "./src/**/*.browser.test.*"
+            "./src/**/*.browser.test.*",
+            "./src/**/*.test-d.*"
           ],
           benchmark: {
             exclude: [
@@ -62,11 +63,29 @@ export default defineConfig({
             ]
           },
           exclude: [
-            "./src/**/*.server.test.*"
+            "./src/**/*.server.test.*",
+            "./src/**/*.test-d.*"
           ],
           benchmark: {
             exclude: [
               "./src/**/*.server.bench.*"
+            ]
+          }
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: "typecheck",
+          include: [
+            "./src/**/*.test-d.mts"
+          ],
+          typecheck: {
+            enabled: true,
+            only: true,
+            ignoreSourceErrors: true,
+            include: [
+              "./src/**/*.test-d.mts"
             ]
           }
         }

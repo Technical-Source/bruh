@@ -1,5 +1,23 @@
 import type { LikelyAsString } from "../dom/types.mts"
 
+// https://tc39.es/ecma262/multipage/abstract-operations.html#sec-samevaluezero
+export const isSameValueZero = (a: unknown, b: unknown) => {
+  // fix NaN !== NaN
+  if (
+    typeof a === "number" &&
+    typeof b === "number"
+  )
+    return (
+      a === b ||
+      (
+        a !== a &&
+        b !== b
+      )
+    )
+
+  return a === b
+}
+
 /**
  * Dispatch a custom event to (capturing) and from (bubbling) a target (usually a DOM node).
  * Returns false if the event was cancelled (preventDefault()) and true otherwise.
@@ -103,41 +121,39 @@ export const omit = <T, K extends keyof T>(t: T, ...keys: ReadonlyArray<K>) => {
 }
 
 export const mapObject = <
-  const O extends {},
-  const K extends keyof O,
-  const V extends O[K],
-  const RK extends PropertyKey,
-  const RV
+  O extends Record<PropertyKey, unknown>,
+  RK extends PropertyKey,
+  RV
 >(
   o: O,
-  f: ([k, v]: [K, V]) => [RK, RV]
-): {
-  [
-    Entry in
-    { [Key in keyof O]: [RK, RV] }[keyof O]
-    as Entry[0]
-  ]: Entry[1]
-} =>
+  f: (entry: [keyof O, O[keyof O]]) => readonly [RK, RV]
+): Record<RK, RV> =>
   Object.fromEntries(
-    Object.entries(o).map(f as any) as any
-  ) as any
+    (Object.entries(o) as [keyof O, O[keyof O]][]).map(f)
+  ) as Record<RK, RV>
+
+export const mapValues = <
+  O extends Record<PropertyKey, unknown>,
+  RV
+>(
+  o: O,
+  f: (value: O[keyof O], key: keyof O) => RV
+): { [K in keyof O]: RV } =>
+  Object.fromEntries(
+    Object.entries(o).map(([k, v]) => [k, f(v as O[keyof O], k as keyof O)])
+  ) as { [K in keyof O]: RV }
 
 export type InvertObject<O extends Record<PropertyKey, PropertyKey>> = {
-  [
-    Entry in
-    { [Key in keyof O]: [O[Key], Key] }[keyof O]
-    as Entry[0]
-  ]: Entry[1]
+  [K in O[keyof O]]: {
+    [Key in keyof O]: O[Key] extends K ? Key : never
+  }[keyof O]
 }
 
 export const invertObject = <const O extends Record<PropertyKey, PropertyKey>>(o: O): InvertObject<O> =>
-  mapObject(o, ([key, value]) => [value, key] as const)
+  Object.fromEntries(
+    Object.entries(o).map(([k, v]) => [v, k])
+  ) as InvertObject<O>
 
-const x = invertObject({ a: 1, b: 2, c: 3 })
-type X = typeof x
-
-const x2 = mapObject({ a: 1, b: 2, c: 3 }, ([key, value]) => [value, key] as const)
-type X2 = typeof x2
 
 export const camelToDashCase = (s: string) =>
   s.replace(/[A-Z]/g, c => "-" + c.toLowerCase())
@@ -525,3 +541,77 @@ export const recursivelySearchFor = <T extends unknown>(
 
 	return []
 }
+
+// https://tc39.es/ecma262/multipage/executable-code-and-execution-contexts.html#sec-canbeheldweakly
+export const canBeHeldWeakly = (x: unknown): x is WeakKey =>
+  (typeof x === "object" && x !== null)
+  || typeof x === "function"
+  || (typeof x === "symbol" && Symbol.keyFor(x) === undefined)
+
+type ScopeNode<T = unknown> = {
+  value?: T,
+  weakChildren?: WeakMap<WeakKey, ScopeNode<T>>,
+  children?: Map<unknown, ScopeNode<T>>
+}
+
+/**
+ * A cache that supports nested scope paths with mixed weak/strong segments.
+ * Object/function segments use WeakMap (GC-able), primitives use Map.
+ */
+export class NestedCache {
+  #root: ScopeNode = {}
+
+  #getOrCreateNode(path: ReadonlyArray<unknown>): ScopeNode {
+    let node = this.#root
+    for (const segment of path) {
+      if (canBeHeldWeakly(segment)) {
+        node.weakChildren ??= new WeakMap()
+        let child = node.weakChildren.get(segment)
+        if (!child)
+          node.weakChildren.set(segment, child = {})
+        node = child
+      }
+      else {
+        node.children ??= new Map()
+        let child = node.children.get(segment)
+        if (!child)
+          node.children.set(segment, child = {})
+        node = child
+      }
+    }
+    return node
+  }
+
+  get<T>(path: ReadonlyArray<unknown>, compute: () => T) {
+    const node = this.#getOrCreateNode(path)
+    if (!Object.hasOwn(node, "value"))
+      node.value = compute()
+    return node.value as T
+  }
+}
+
+const memoCache = new NestedCache()
+
+export const memo = <
+  In  extends unknown,
+  Out extends unknown
+>(
+  f: (x: In) => Out,
+  {
+    scope = [f],
+    getKey
+  }: {
+    /**
+     * Defaults to [f]. Use e.g. [globalThis] to never GC memoized inputs and outputs.
+     */
+    scope?: ReadonlyArray<unknown>,
+    /**
+     * Defaults to the input itself
+     */
+    getKey?: (x: In) => unknown
+  } = {}
+) => (x: In) =>
+  memoCache.get(
+    [...scope, getKey ? getKey(x) : x],
+    () => f(x)
+  )

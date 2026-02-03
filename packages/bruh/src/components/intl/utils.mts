@@ -156,9 +156,9 @@ const reflectLanguagePickerLanguages = () => {
 reflectLanguagePickerLanguages()
 addEventListener("storage", reflectLanguagePickerLanguages) // only accounts for changes on different windows
 
-const urlLocales = r([currentUrl], () => parseLocales(currentUrl.value.searchParams.getAll("locale")))
-const urlLanguages = r([currentUrl], () => parseLocales(currentUrl.value.searchParams.getAll("language")))
-const urlRegions = r([currentUrl], () => {
+const urlLocales = r(() => parseLocales(currentUrl.value.searchParams.getAll("locale")))
+const urlLanguages = r(() => parseLocales(currentUrl.value.searchParams.getAll("language")))
+const urlRegions = r(() => {
   const regions = new Set<string>()
 
   for (const region of currentUrl.value.searchParams.getAll("region")) {
@@ -170,14 +170,14 @@ const urlRegions = r([currentUrl], () => {
   return [...regions]
 })
 
-export const userLanguages = r([urlLanguages, urlLocales, languagePickerLanguages, browserLanguages], () => [
+export const userLanguages = r(() => [
   ...urlLanguages.value,
   ...urlLocales.value,
   ...languagePickerLanguages.value,
   ...browserLanguages.value
 ] as const)
 
-export const userRegions = r([currentUrl, urlRegions, urlLocales, urlLanguages], () => {
+export const userRegions = r(() => {
   const regions = new Set<string>(urlRegions.value)
   const guessedRegions = new Set<string>()
 

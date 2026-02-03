@@ -1,5 +1,5 @@
-import { isReactive, reactiveDo, flat } from "../reactive/index.mts"
-import type { Reactive, MaybeReactive, NestedReactive } from "../reactive/index.mts"
+import { reactiveDo, flat, watch } from "../reactive/index.mts"
+import { Reactive, type MaybeReactive, type NestedReactive } from "../reactive/index.mts"
 import type {
   PropertyWiseOr,
   LikelyAsString,
@@ -156,19 +156,23 @@ declare global {
 const reactiveTerminalBruhChildToNode: {
   <Child extends TerminalBruhChild>(child: Reactive<Child>): TerminalBruhChildOutputNode<Child>
 } = (child: Reactive<TerminalBruhChild>): any => {
-  const node = terminalBruhChildToNode(child.value)
+  const node = terminalBruhChildToNode(child.peek())
 
   let ownedReactives = node[ownedReactivesSymbol] ??= new Set()
   ownedReactives.add(child)
 
   let nodeWeakRef = new WeakRef(node)
 
-  const stopReacting = child.addReaction(() => {
+  const stopReacting = watch([child], () => {
     const node = nodeWeakRef.deref()
 
     // Stop swapping if no longer possible
-    if (!node?.parentNode) {
+    if (!node) {
       stopReacting()
+      return
+    }
+    if (!node.parentNode) {
+      console.warn("Node has no parent to swap within", { node, child })
       return
     }
 
@@ -191,7 +195,7 @@ const reactiveTerminalBruhChildToNode: {
       nodeWeakRef = new WeakRef(node)
       oldNode.replaceWith(node)
     }
-  })
+  }, { skipFirst: true })
 
   return node
 }
@@ -209,13 +213,17 @@ function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>
   let firstWeakRef = new WeakRef(first)
   let lastWeakRef  = new WeakRef(last)
 
-  const stopReacting = child.addReaction(() => {
+  const stopReacting = watch([child], () => {
     const first = firstWeakRef.deref()
     const last  = lastWeakRef.deref()
 
     // Stop swapping if there is no parent to swap within
-    if (!first?.parentNode || !last?.parentNode) {
+    if (!first || !last) {
       stopReacting()
+      return
+    }
+    if (!first.parentNode || !last.parentNode) {
+      console.warn("Node range has no parent to swap within", { first, last, child })
       return
     }
 
@@ -240,10 +248,10 @@ function * reactiveIterableBruhChildToNodes(child: Reactive<Iterable<BruhChild>>
       range.deleteContents()
       first.replaceWith(reactiveTerminalBruhChildToNode(child_ as Reactive<TerminalBruhChild>))
     }
-  })
+  }, { skipFirst: true })
 
   yield first
-  yield* bruhChildrenToNodes(child.value)
+  yield* bruhChildrenToNodes(child.peek())
   yield last
 }
 
@@ -257,16 +265,16 @@ export function * bruhChildrenToNodes(children: Iterable<BruhChild>): IterableIt
       : children
 
   for (const child of partiallyFlattened) {
-    if (!isReactive(child)) {
+    if (!(child instanceof Reactive)) {
       if (isBruhIterable(child))
         yield* bruhChildrenToNodes(child)
       else
         yield terminalBruhChildToNode(child)
     }
     else {
-      const flattened = flat(child)
+      const flattened = flat(child as NestedReactive<Iterable<BruhChild> | TerminalBruhChild>)
 
-      if (isBruhIterable(flattened.value))
+      if (isBruhIterable(flattened.peek()))
         yield* reactiveIterableBruhChildToNodes(flattened as Reactive<Iterable<BruhChild>>)
       else
         yield reactiveTerminalBruhChildToNode(flattened as Reactive<TerminalBruhChild>)
@@ -299,13 +307,15 @@ export const applyStyles = <E extends ElementWithStyle>(
   for (const property in styles) {
     const property_ = property as keyof StylesToApply
     const maybeReactive = styles[property_]
-    if (isReactive(maybeReactive))
+    if (maybeReactive instanceof Reactive)
       ownedReactives.add(maybeReactive)
 
-    reactiveDo(maybeReactive, value => {
+    const stopReacting = reactiveDo(maybeReactive, value => {
       const element = elementWeakRef.deref()
-      if (!element)
+      if (!element) {
+        stopReacting?.()
         return
+      }
 
       if (value != null && typeof value !== "boolean")
         element.style.setProperty   (property, value + "")
@@ -328,13 +338,15 @@ export const applyClasses = (
 
   for (const name in classes) {
     const maybeReactive = classes[name]
-    if (isReactive(maybeReactive))
+    if (maybeReactive instanceof Reactive)
       ownedReactives.add(maybeReactive)
 
-    reactiveDo(maybeReactive, value => {
+    const stopReacting = reactiveDo(maybeReactive, value => {
       const element = elementWeakRef.deref()
-      if (!element)
+      if (!element) {
+        stopReacting?.()
         return
+      }
 
       // without coercing to a boolean, `undefined` would toggle instead of forcing removal
       element.classList.toggle(name, value === true)
@@ -358,13 +370,15 @@ export const applyAttributes = <
 
   for (const name in attributes) {
     const maybeReactive = attributes[name]
-    if (isReactive(maybeReactive))
+    if (maybeReactive instanceof Reactive)
       ownedReactives.add(maybeReactive)
 
-    reactiveDo<ElementToAttributes<Name, NS>[typeof name] | LikelyAsBoolean>(attributes[name], value => {
+    const stopReacting = reactiveDo<ElementToAttributes<Name, NS>[typeof name] | LikelyAsBoolean>(attributes[name], value => {
       const element = elementWeakRef.deref()
-      if (!element)
+      if (!element) {
+        stopReacting?.()
         return
+      }
 
       if (typeof value === "boolean")
         element.toggleAttribute(name, value)
@@ -383,14 +397,24 @@ export const applyAttributes = <
 // Text nodes
 export const t = (textContent: MaybeReactive<LikelyAsString>) => {
   // Non-reactive values are just text nodes
-  if (!isReactive(textContent))
+  if (!(textContent instanceof Reactive))
     return document.createTextNode(textContent + "")
 
   // Reactive values auto-update the node's text content
-  const node = document.createTextNode(textContent.value + "")
-  textContent.addReaction(() => {
+  const node = document.createTextNode(textContent.peek() + "")
+  const ownedReactives = node[ownedReactivesSymbol] ??= new Set()
+  ownedReactives.add(textContent)
+  let nodeWeakRef = new WeakRef(node)
+
+  const stopReacting = watch([textContent], () => {
+    const node = nodeWeakRef.deref()
+    if (!node) {
+      stopReacting()
+      return
+    }
+
     node.textContent = textContent.value + ""
-  })
+  }, { skipFirst: true })
   return node
 }
 
@@ -496,7 +520,7 @@ export const jsx: {
 
   // Extract explicit options from the bruh prop
   let options: BruhOptions = {}
-  if (typeof props.bruh === "object" && !isReactive(props.bruh)) {
+  if (typeof props.bruh === "object" && !(props.bruh instanceof Reactive)) {
     options = props.bruh
     delete props.bruh
   }
@@ -527,7 +551,7 @@ export const jsx: {
     "style" in props &&
     props.style != null &&
     typeof props.style === "object" &&
-    !isReactive(props.style) &&
+    !(props.style instanceof Reactive) &&
     isElementWithStyle(element)
   ) {
     applyStyles(element, props.style)
@@ -539,7 +563,7 @@ export const jsx: {
     "class" in props &&
     props.class != null &&
     typeof props.class === "object" &&
-    !isReactive(props.class)
+    !(props.class instanceof Reactive)
   ) {
     applyClasses(element, props.class)
     delete props.class

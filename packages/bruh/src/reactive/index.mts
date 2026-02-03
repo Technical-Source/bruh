@@ -1,266 +1,431 @@
-import { attempt } from "../utils/index.mts"
+import { attempt, isSameValueZero } from "../utils/index.mts"
 
-export const isReactiveSymbol = Symbol.for("bruh reactive")
+interface Observer {
+  weakRef: WeakRef<Observer>,
+  dependencies: Set<Reactive<unknown>>,
+  isDisposed: boolean,
+  markDirty: () => void
+}
 
-export const isReactive = (x: unknown): x is Reactive<unknown> =>
-  // @ts-ignore
-  x?.[isReactiveSymbol] === true
+let currentObserver: Observer | undefined
+const observerStack: (Observer | undefined)[] = []
 
-type Reaction = () => void
+const pushObserver = (next: Observer | undefined) => {
+  observerStack.push(currentObserver)
+  currentObserver = next
+}
+
+const popObserver = () => {
+  currentObserver = observerStack.pop()
+}
+
+const trackWith = <T extends unknown>(observer: Observer | undefined, f: () => T): T => {
+  pushObserver(observer)
+  try {
+    return f()
+  }
+  finally {
+    popObserver()
+  }
+}
+
+export const untrack = <T extends unknown>(f: () => T): T => {
+  return trackWith(undefined, f)
+}
+
+const dirtyEffects = new Set<Effect>()
+let isFlushScheduled = false
+let isFlushing = false
+
+const scheduleFlush = () => {
+  if (isFlushScheduled || isFlushing)
+    return
+
+  isFlushScheduled = true
+  queueMicrotask(flush)
+}
+
+export const flush = () => {
+  if (isFlushing)
+    return
+
+  isFlushing = true
+  isFlushScheduled = false
+
+  try {
+    while (dirtyEffects.size) {
+      const wave = [...dirtyEffects]
+      dirtyEffects.clear()
+      for (const effect of wave)
+        if (!effect.isDisposed)
+          effect.run()
+    }
+  }
+  finally {
+    isFlushing = false
+  }
+}
+
 type StopReacting = () => void
 
-export interface Reactive<T> {
-  [isReactiveSymbol]: true
+export type NonReactive<T = unknown> = T extends Reactive<any> ? never : T
 
-  value: T
+export type MaybeReactive<T> = Reactive<T> | NonReactive<T>
 
-  addReaction(reaction: Reaction): StopReacting
-}
-
-export type Unreactive<T = unknown> = Exclude<T, { [isReactiveSymbol]: true }>
-
-export type MaybeReactive<T> = Reactive<T> | Unreactive<T>
-
-export type NestedReactive<T extends Unreactive> = Reactive<T | NestedReactive<T>>
-
-/**
- * A super simple and performant reactive value implementation
- */
-export class SimpleReactive<T> implements Reactive<T> {
-  [isReactiveSymbol] = true as const
-
-  #value: T
-  #reactions = new Set<Reaction>()
-
-  constructor(value: T) {
-    this.#value = value
-  }
-
-  get value() {
-    return this.#value
-  }
-
-  set value(newValue) {
-    if (newValue === this.#value)
-      return
-
-    this.#value = newValue
-    for (const reaction of this.#reactions)
-      attempt(reaction)
-  }
-
-  /**
-   * @param reaction called every time that the value changes
-   * @returns a function that stops the reactions
-   */
-  addReaction(reaction: Reaction) {
-    this.#reactions.add(reaction)
-
-    return () =>
-      this.#reactions.delete(reaction)
-  }
-}
+export type NestedReactive<T extends NonReactive> = Reactive<T | NestedReactive<T>>
 
 export type IsEqual<T> = {
   bivarianceHack(a: T, b: T): boolean
 }["bivarianceHack"]
 
-export type ReactiveOptions<T> = {
+export type SourceOptions<T> = {
   isEqual?: IsEqual<T>
 }
 
-export type SourceNode<T>     = FunctionalReactive<T, "source">
-export type DerivativeNode<T> = FunctionalReactive<T, "derivative">
-
-/**
- * A reactive implementation for building functional reactive graphs.
- * Ensures state consistency, minimal node updates, and transparent update batching.
- */
-export class FunctionalReactive<T, U extends "source" | "derivative" = any> implements Reactive<T> {
-  [isReactiveSymbol] = true as const
-
-  #weakRef = new WeakRef(this)
-
-  // @ts-ignore
-  #value: T
-  #reactions = new Set<Reaction>()
-
-  // For derived nodes, this is the derivation function
-  // @ts-ignore
-  #f:
-    U extends "derivative"
-      ? () => T
-      : never
-
+export type DerivativeOptions<T> = {
+  memoKey?: () => unknown,
   isEqual?: IsEqual<T>
+}
 
-  // Source nodes are 0 deep in the derivation graph
-  // This is for topological sort
-  #depth:
-    U extends "source"
-      ? 0
-      : number // natural, > 0
-    = 0
+export type ReadonlyReactive<T> = {
+  readonly value: T,
+  peek(): T
+}
 
-  // All nodes have a set of derivatives that update when the node changes
-  #derivatives = new Set<WeakRef<DerivativeNode<unknown>>>()
+export type WritableReactive<T> = {
+  value: T,
+  peek(): T
+}
 
-  // Keep track of all the pending changes from the value setter
-  static #settersQueue = new Map<SourceNode<unknown>, unknown>()
+export type SourceNode<T>     = Reactive<T> & WritableReactive<T>
+export type DerivativeNode<T> = Reactive<T> & ReadonlyReactive<T>
 
-  // A queue of derivatives to potentially update, sorted into sets by depth
-  // This starts with depth 1 and can potentially have holes
-  static #derivativesQueue: Array<Set<DerivativeNode<unknown>> | undefined> = []
+export type ReactiveContext = {
+  readonly isTracking: boolean,
+  readonly dependencies: ReadonlyArray<Reactive<unknown>>,
+  readonly stackDepth: number
+}
 
-  // A queue of reactions to run after the graph is fully updated
-  static #reactionsQueue: Array<Reaction> = []
-
-  constructor(value: T, options?: ReactiveOptions<T>)
-  constructor(
-    dependencies: ReadonlyArray<FunctionalReactive<unknown>>,
-    f: () => T,
-    options?: ReactiveOptions<T>
-  )
-  constructor(
-    xOrDependencies: T | ReadonlyArray<FunctionalReactive<unknown>>,
-    optionsOrF?: ReactiveOptions<T> | (() => T),
-    options?: ReactiveOptions<T>
-  ) {
-    // No derivation function means this is a source node
-    if (typeof optionsOrF !== "function") {
-      const this_ = this as SourceNode<T>
-      const value = xOrDependencies as T
-      const options = optionsOrF as ReactiveOptions<T> | undefined
-
-      this_.#value = value
-      this_.isEqual = options?.isEqual
-      return
+export class Reactive<T> {
+  static get context(): ReactiveContext {
+    return {
+      isTracking: currentObserver !== undefined,
+      dependencies: currentObserver ? [...currentObserver.dependencies] : [],
+      stackDepth: observerStack.length
     }
-
-    // Derived node
-    const this_ = this as DerivativeNode<T>
-    const dependencies = xOrDependencies as ReadonlyArray<FunctionalReactive<unknown>>
-    const f = optionsOrF as () => T
-
-    this_.#value = attempt(f)
-    this_.#f = f
-    this_.isEqual = options?.isEqual
-
-    this_.#depth = Math.max(0, ...dependencies.map(dependency => dependency.#depth)) + 1
-
-    dependencies.forEach(dependency => dependency.#derivatives.add(this_.#weakRef))
   }
 
-  get value(): T {
-    // If there are any pending updates
-    if (FunctionalReactive.#settersQueue.size) {
-      // If this is a source node that was updated, just return that
-      // new value without actually updating any derived nodes yet
-      if (this.#depth === 0) {
-        const this_ = this as SourceNode<T>
-        if (FunctionalReactive.#settersQueue.has(this_))
-          return FunctionalReactive.#settersQueue.get(this_) as T
+  #value: T
+  #getter?: () => T
+  #memoKey?: () => unknown
+  #lastMemoKey?: unknown
+  #isEqual: IsEqual<T> = isSameValueZero
+  #dependencies = new Set<Reactive<unknown>>()
+  #observers = new Set<WeakRef<Observer>>()
+  #isDirty = false
+  #isComputing = false
+
+  #ownObserver: Observer
+
+  private constructor(
+    options: (
+      {
+        value: T
+      } |
+      {
+        memoKey?: () => unknown,
+        getter: () => T
       }
-      // Heuristic quick invalidation for derived nodes
-      // Apply updates now, it's ok that there's already a microtask queued for this
-      else {
-        FunctionalReactive.applyUpdates()
+    ) & {
+      isEqual?: IsEqual<T>
+    }
+  ) {
+    this.#ownObserver = {
+      dependencies: this.#dependencies,
+      isDisposed: false,
+      weakRef: undefined!,
+      markDirty: () => {
+        if (this.#isDirty)
+          return
+
+        this.#isDirty = true
+        this.#markObserversDirty()
       }
     }
+    this.#ownObserver.weakRef = new WeakRef(this.#ownObserver)
+
+    if ("getter" in options) {
+      this.#memoKey = options.memoKey
+      this.#getter = options.getter
+      this.#isDirty = true
+      this.#value = undefined as T
+    }
+    else {
+      this.#value = options.value
+    }
+
+    if (options.isEqual)
+      this.#isEqual = options.isEqual
+  }
+
+  static source<T>(value: T, options?: SourceOptions<T>): SourceNode<T> {
+    return new Reactive({
+      value,
+      isEqual: options?.isEqual
+    })
+  }
+
+  static derived<T>(getter: () => T, options?: DerivativeOptions<T>): DerivativeNode<T> {
+    const result = new Reactive({
+      getter,
+      memoKey: options?.memoKey,
+      isEqual: options?.isEqual
+    })
+    result.#compute()
+    return result
+  }
+
+  peek() {
+    if (this.#isDirty)
+      this.#compute()
 
     return this.#value
   }
 
-  set value(newValue) {
-    // Only allow source nodes to be directly updated
-    if (this.#depth !== 0)
+  get value() {
+    this.#trackAccess()
+
+    return this.peek()
+  }
+
+  set value(next: T) {
+    if (this.#getter)
+      throw new Error("Reactive value is readonly")
+
+    if (this.#isEqual(this.#value, next))
       return
 
-    const this_ = this as SourceNode<T>
-
-    const isEqual = this.isEqual
-      ? this.isEqual(newValue, this.#value)
-      : newValue === this.#value
-
-    if (isEqual) {
-      FunctionalReactive.#settersQueue.delete(this_)
-      return
-    }
-
-    // Unless asked for earlier, these updates are just queued up until the microtasks run
-    if (!FunctionalReactive.#settersQueue.size)
-      queueMicrotask(FunctionalReactive.applyUpdates)
-
-    FunctionalReactive.#settersQueue.set(this_, newValue)
+    this.#value = next
+    this.#markObserversDirty()
   }
 
   /**
-   * @param reaction called every time that the value changes
-   * @returns a function that stops the reactions
+   * @internal
    */
-  addReaction(reaction: Reaction) {
-    this.#reactions.add(reaction)
-
-    return () =>
-      this.#reactions.delete(reaction)
+  removeObserver(observer: Observer) {
+    this.#observers.delete(observer.weakRef)
   }
 
-  // Apply an update for a node and queue its derivatives if it actually changed
-  #applyUpdate(newValue: T) {
-    const isEqual = this.isEqual
-      ? this.isEqual(newValue, this.#value)
-      : newValue === this.#value
-
-    if (isEqual)
+  #trackAccess() {
+    if (!currentObserver)
       return
 
-    this.#value = newValue
-    FunctionalReactive.#reactionsQueue.push(...this.#reactions)
+    this.#observers.add(currentObserver.weakRef)
+    currentObserver.dependencies.add(this)
+  }
 
-    this.#derivatives.forEach(weakRef => {
-      const derivative = weakRef.deref()
-      if (!derivative) {
-        this.#derivatives.delete(weakRef)
-        return
+  #markObserversDirty() {
+    for (const ref of this.#observers) {
+      const observer = ref.deref()
+      if (observer)
+        observer.markDirty()
+      else
+        this.#observers.delete(ref)
+    }
+  }
+
+  #clearDependencies() {
+    for (const dependency of this.#dependencies)
+      dependency.removeObserver(this.#ownObserver)
+
+    this.#dependencies.clear()
+  }
+
+  #compute() {
+    if (!this.#getter || !this.#isDirty)
+      return
+
+    if (this.#isComputing)
+      throw new Error("Cycle detected while computing derivation")
+
+    this.#isComputing = true
+    this.#isDirty = false
+    this.#clearDependencies()
+
+    try {
+      if (this.#memoKey) {
+        const key = trackWith(this.#ownObserver, this.#memoKey)
+        if (isSameValueZero(key, this.#lastMemoKey))
+          return
+        this.#lastMemoKey = key
       }
 
-      const depthSet = FunctionalReactive.#derivativesQueue[derivative.#depth] ??= new Set()
-      depthSet.add(derivative)
-    })
+      const next = trackWith(this.#ownObserver, this.#getter)
+      const changed = !this.#isEqual(this.#value, next)
+      if (changed)
+        this.#value = next
+    }
+    catch (e) {
+      console.error(e)
+    }
+    finally {
+      this.#isComputing = false
+    }
+  }
+}
+
+type Cleanup = () => void
+
+const activeEffects = new Set<Effect>()
+
+class Effect implements Observer {
+  weakRef = new WeakRef(this)
+  dependencies = new Set<Reactive<unknown>>()
+  isDisposed = false
+
+  #f: () => void | Cleanup
+  #cleanup?: () => void
+
+  constructor(f: () => void | Cleanup) {
+    this.#f = f
+
+    activeEffects.add(this)
+
+    this.markDirty()
   }
 
-  /**
-   * Apply pending updates from actually changed source nodes
-   */
-  static applyUpdates() {
-    if (!FunctionalReactive.#settersQueue.size)
+  markDirty() {
+    if (this.isDisposed)
       return
 
-    // Bootstrap by applying the updates from the pending setters
-    for (const [sourceNode, newValue] of FunctionalReactive.#settersQueue.entries())
-      sourceNode.#applyUpdate(newValue)
-    FunctionalReactive.#settersQueue.clear()
+    dirtyEffects.add(this)
+    scheduleFlush()
+  }
 
-    // Iterate down the depths, ignoring holes
-    // Note that both the queue (Array) and each depth Set iterators update as items are added
-    for (const depthSet of FunctionalReactive.#derivativesQueue) if (depthSet)
-      for (const derivative of depthSet)
-        derivative.#applyUpdate(
-          attempt(() =>
-            derivative.#f()
-          )
-        )
+  run() {
+    if (this.isDisposed)
+      return
 
-    FunctionalReactive.#derivativesQueue.length = 0
+    if (this.#cleanup) {
+      attempt(this.#cleanup)
+      this.#cleanup = undefined
+    }
 
-    // Call all reactions now that the graph has a fully consistent state
-    for (const reaction of FunctionalReactive.#reactionsQueue)
-      attempt(reaction)
-    FunctionalReactive.#reactionsQueue.length = 0
+    for (const dependency of this.dependencies)
+      dependency.removeObserver(this)
+    this.dependencies.clear()
+
+    const result = trackWith(this, () => attempt(this.#f))
+    if (typeof result === "function")
+      this.#cleanup = result
+  }
+
+  dispose() {
+    if (this.isDisposed)
+      return
+
+    this.isDisposed = true
+
+    activeEffects.delete(this)
+
+    dirtyEffects.delete(this)
+
+    if (this.#cleanup)
+      attempt(this.#cleanup)
+
+    for (const dependency of this.dependencies)
+      dependency.removeObserver(this)
+    this.dependencies.clear()
+  }
+}
+
+type WatchOptionsAuto = {
+}
+
+type WatchOptionsExplicit = {
+  skipFirst?: boolean
+}
+
+type Watch = {
+  /**
+   * Auto-tracking effect: tracks all .value reads in the callback
+   */
+  (f: () => void | Cleanup, options?: WatchOptionsAuto): StopReacting
+
+  /**
+   * Explicit dependency effect: tracks only the specified dependencies,
+   * runs the callback untracked when any dependency changes
+   */
+  <Dependencies extends ReadonlyArray<Reactive<unknown>>>(
+    dependencies: Dependencies | (() => Dependencies),
+    f: () => void | Cleanup,
+    options?: WatchOptionsExplicit
+  ): StopReacting
+}
+
+export const watch: Watch = <
+  Dependencies extends ReadonlyArray<Reactive<unknown>>
+>(
+  fOrDependencies: (() => void | Cleanup) | Dependencies | (() => Dependencies),
+  fOrOptions?: (() => void | Cleanup) | WatchOptionsAuto,
+  options?: WatchOptionsExplicit
+): StopReacting => {
+  // Auto-tracking mode: watch(f) or watch(f, options)
+  if (typeof fOrDependencies === "function" && (fOrOptions === undefined || typeof fOrOptions !== "function")) {
+    const f = fOrDependencies as () => void | Cleanup
+    const options = fOrOptions
+
+    const effect = new Effect(f)
+    return () => {
+      effect.dispose()
+    }
+  }
+
+  // Explicit dependencies mode: watch(dependencies, f, options?)
+  const dependenciesOrGet = fOrDependencies as Dependencies | (() => Dependencies)
+  const f = fOrOptions as () => void | Cleanup
+
+  let isFirst = true
+  const effect = new Effect(() => {
+    const dependencies =
+      typeof dependenciesOrGet === "function"
+        ? untrack(dependenciesOrGet)
+        : dependenciesOrGet
+    for (const dependency of dependencies)
+      dependency.value
+
+    if (isFirst) {
+      isFirst = false
+      if (options?.skipFirst)
+        return
+    }
+
+    return untrack(f)
+  })
+  return () => {
+    effect.dispose()
   }
 }
 
 type R = {
+  /**
+   * A derived node with auto-tracking
+   */
+  <T>(
+    f: () => T,
+    options?: DerivativeOptions<T>
+  ): DerivativeNode<T>
+
+  /**
+   * A derived node with explicit dependencies:
+   * tracks only the specified dependencies, runs the getter untracked
+   */
+  <T, Dependencies extends ReadonlyArray<Reactive<unknown>>>(
+    dependencies: Dependencies | (() => Dependencies),
+    f: () => T,
+    options?: DerivativeOptions<T>
+  ): DerivativeNode<T>
+
   /**
    * An initially undefined source node
    */
@@ -269,27 +434,57 @@ type R = {
   /**
    * A source node
    */
-  <T>(value: T, options?: ReactiveOptions<T>): SourceNode<T>
-
-  /**
-   * A derived node
-   */
-  <T>(
-    dependencies: ReadonlyArray<FunctionalReactive<unknown>>,
-    f: () => T,
-    options?: ReactiveOptions<T>
-  ): DerivativeNode<T>
+  <T>(value: T, options?: SourceOptions<T>): SourceNode<T>
 }
 /**
- * A convenient wrapper for FunctionalReactive
+ * A convenient wrapper for Reactive
  */
-export const r: R = <T extends unknown>(
-  xOrDependencies?: T | ReadonlyArray<FunctionalReactive<unknown>>,
-  optionsOrF?: ReactiveOptions<T> | (() => T),
-  options?: ReactiveOptions<T>
-) =>
-  // @ts-ignore
-  new FunctionalReactive(xOrDependencies, optionsOrF, options)
+export const r: R = <T extends unknown, Dependencies extends ReadonlyArray<Reactive<unknown>>>(
+  xOrFOrDependencies?: T | (() => T) | Dependencies | (() => Dependencies),
+  optionsOrF?: SourceOptions<T> | DerivativeOptions<T> | (() => T),
+  options?: DerivativeOptions<T>
+) => {
+  // r(dependencies, f) or r(() => dependencies, f) - explicit dependency mode
+  const isExplicit =
+    (Array.isArray(xOrFOrDependencies) || typeof xOrFOrDependencies === "function") &&
+    typeof optionsOrF === "function"
+
+  if (isExplicit) {
+    const dependenciesOrGet = xOrFOrDependencies as Dependencies | (() => Dependencies)
+    const f = optionsOrF
+
+    return Reactive.derived(() => {
+      const dependencies =
+      typeof dependenciesOrGet === "function"
+        ? untrack(dependenciesOrGet)
+        : dependenciesOrGet
+      for (const dependency of dependencies)
+        dependency.value
+
+      return untrack(f)
+    }, options)
+  }
+  else {
+    const options = optionsOrF as SourceOptions<T> | DerivativeOptions<T>
+
+    // r(f) - auto-tracking derived
+    if (typeof xOrFOrDependencies === "function") {
+      const f = xOrFOrDependencies as () => T
+
+      return Reactive.derived(f, options as DerivativeOptions<T>)
+    }
+
+    // r() or r(value) - source node
+    const x = xOrFOrDependencies as T
+
+    return Reactive.source(x, options as SourceOptions<T>)
+  }
+}
+
+export const getValue = <T extends unknown>(x: MaybeReactive<T>) =>
+  x instanceof Reactive
+    ? x.value
+    : x
 
 type ReactiveDo = {
   /**
@@ -305,8 +500,8 @@ type ReactiveDo = {
    * Calls the given function with the value once
    */
   <T>(
-    value: Unreactive<T>,
-    f: (value: Unreactive<T>) => unknown
+    value: NonReactive<T>,
+    f: (value: NonReactive<T>) => unknown
   ): undefined
 
   /**
@@ -326,56 +521,29 @@ export const reactiveDo: ReactiveDo = <T extends unknown>(
   x: MaybeReactive<T>,
   f: (value: T) => unknown
 ): any => {
-  if (isReactive(x)) {
-    f(x.value)
-    return x.addReaction(() => f(x.value))
-  }
+  if (x instanceof Reactive)
+    return watch(() => {
+      const value = x.value
+      untrack(() => f(value))
+    })
 
   f(x)
 }
 
-export const flat = <T extends Unreactive>(source: NestedReactive<T>): FunctionalReactive<T> => {
-  const chain: Array<{
-    reactive: NestedReactive<T>,
-    stopReacting: StopReacting
-  }> = []
+const flatCache = new WeakMap<Reactive<unknown>, Reactive<unknown>>()
 
-  const reactive = new FunctionalReactive<T>(undefined as T)
+export const flat = <T extends unknown>(nested: NestedReactive<T>): Reactive<T> => {
+  const cached = flatCache.get(nested)
+  if (cached)
+    return cached as Reactive<T>
 
-  const reaction = () => {
-    let lastInCommon: NestedReactive<T> = source
-    let i = 0
-    while (lastInCommon.value === chain[i + 1]?.reactive) {
-      lastInCommon = lastInCommon.value as NestedReactive<T>
-      i++
-    }
+  const derived = r(() => {
+    let cursor: unknown = nested.value
+    while (cursor instanceof Reactive)
+      cursor = cursor.value
+    return cursor as T
+  })
 
-    if (i + 1 < chain.length) {
-      for (let j = i + 1; j < chain.length; j++)
-        chain[j].stopReacting()
-
-      chain.length = i
-    }
-
-    updateChain(lastInCommon.value)
-  }
-
-  const updateChain = (newStart: T | NestedReactive<T>) => {
-    while (isReactive(newStart)) {
-      chain.push({
-        reactive: newStart,
-        stopReacting: newStart.addReaction(reaction)
-      })
-      newStart = newStart.value
-    }
-
-    const innerMost = chain[chain.length - 1].reactive as Reactive<T>
-    reactive.isEqual = (innerMost as FunctionalReactive<T>).isEqual
-    reactive.value = innerMost.value
-    FunctionalReactive.applyUpdates()
-  }
-
-  updateChain(source)
-
-  return reactive
+  flatCache.set(nested, derived)
+  return derived
 }

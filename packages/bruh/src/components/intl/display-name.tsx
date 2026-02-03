@@ -43,7 +43,7 @@ export class BruhDisplayName extends BruhCustomElementBase<BruhDisplayNameAttrib
   constructor() {
     super()
 
-    this.#locales = r([this.bruh.attributes.locales, userLanguages], () =>
+    this.#locales = r(() =>
       parseLocales([
         ...this.bruh.attributes.locales.value ?? [],
         ...userLanguages.value
@@ -57,13 +57,13 @@ export class BruhDisplayName extends BruhCustomElementBase<BruhDisplayNameAttrib
       mapObject(optionToReactiveAttribute, ([option, attribute]) => [option, attribute.value || undefined]) as Partial<Intl.DisplayNamesOptions>
     )
 
-    this.#formatter = r([this.#locales, this.#options], () =>
+    this.#formatter = r(() =>
       attempt(() =>
         new Intl.DisplayNames(this.#locales.value, this.#options.value as any)
       )
     )
 
-    this.#formatted = r([this.#formatter, this.bruh.attributes.code], () => {
+    this.#formatted = r(() => {
       const formatter = this.#formatter.value
       const code = this.bruh.attributes.code.value
       if (!formatter || !code)

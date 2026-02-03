@@ -1,5 +1,11 @@
 # bruh
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- Overhaul reactivity to be dynamic
+
 ## 2.0.0-beta.4
 
 ### Patch Changes

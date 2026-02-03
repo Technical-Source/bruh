@@ -2,4 +2,5 @@
 **/dist/
 .DS_Store
 **/coverage/
+**/__screenshots__/
 ts-trace/

@@ -1,8 +1,9 @@
 /** @jsxImportSource bruh/browser */
 import { bruhChildrenToNodes } from "bruh/browser"
-import { FunctionalReactive, r } from "../../reactive/index.mts"
+import { Reactive, r } from "../../reactive/index.mts"
 import { spaceSeparated } from "../utils.mts"
 import { BruhCustomElementBase } from "../custom-elements.mts"
+import { MemoMap } from "../misc.mts"
 
 const clamp = (min: number, x: number, max: number) =>
   Math.min(Math.max(min, x), max)
@@ -185,13 +186,13 @@ export class BruhAsideTOC extends BruhCustomElementBase<BruhAsideTOCAttributes> 
     }
   }
 
-  #prominences: FunctionalReactive<Map<HTMLHeadingElement, FunctionalReactive<number>> | undefined>
+  #prominences: Reactive<Map<HTMLHeadingElement, Reactive<number>> | undefined>
   #rendered
 
   constructor() {
     super()
 
-    const headings = r([this.bruh.attributes.headings, this.bruh.attributes["max-level"]], () =>
+    const headings = r(() =>
       this.bruh.attributes.headings.value
         ?.map(id => this.ownerDocument.getElementById(id))
         .filter((e): e is HTMLHeadingElement => {
@@ -203,7 +204,7 @@ export class BruhAsideTOC extends BruhCustomElementBase<BruhAsideTOCAttributes> 
         })
     )
 
-    const container = r([this.bruh.attributes.container], () =>
+    const container = r(() =>
       this.bruh.attributes.container.value
         ? this.ownerDocument.getElementById(this.bruh.attributes.container.value) ?? undefined
         : undefined
@@ -244,26 +245,28 @@ export class BruhAsideTOC extends BruhCustomElementBase<BruhAsideTOCAttributes> 
       return new Map([...prominences].map(([heading, prominence]) => [heading, r(prominence)]))
     })
 
-    this.#rendered = r([this.#prominences], () => {
+    this.#rendered = r(() => {
       const prominences = this.#prominences.value
       if (!prominences)
         return
 
       return (
         <ol>
-          {[...prominences].map(([heading, prominence]) => (
-            <li
-              class={`bruh-aside-toc--level-${getHeadingLevel(heading)}`}
-              style={{ "--prominence": prominence }}
-            >
-              <a href={`#${heading.id}`}>
-                {heading.textContent}
-              </a>
-            </li>
-          ))}
+          <MemoMap items={prominences} getKey={([heading]) => heading}>
+            {([heading, prominence]) => {
+              <li
+                class={`bruh-aside-toc--level-${getHeadingLevel(heading)}`}
+                style={{ "--prominence": prominence }}
+              >
+                <a href={`#${heading.id}`}>
+                  {heading.textContent}
+                </a>
+              </li>
+            }}
+          </MemoMap>
         </ol>
       )
-    })
+    }, { memoKey: () => !this.#prominences.value })
   }
 
   mountedCallback() {

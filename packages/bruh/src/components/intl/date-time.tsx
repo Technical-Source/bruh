@@ -221,7 +221,7 @@ export class BruhDateTime extends BruhCustomElementBase<BruhDateTimeAttributes> 
   constructor() {
     super()
 
-    this.#locales = r([this.bruh.attributes.locales, userLanguages], () =>
+    this.#locales = r(() =>
       parseLocales([
         ...this.bruh.attributes.locales.value ?? [],
         ...userLanguages.value
@@ -235,7 +235,7 @@ export class BruhDateTime extends BruhCustomElementBase<BruhDateTimeAttributes> 
       mapObject(optionToReactiveAttribute, ([option, attribute]) => [option, attribute.value || undefined]) as Partial<Intl.DateTimeFormatOptions>
     )
 
-    this.#formatter = r([this.#locales, this.#options], () =>
+    this.#formatter = r(() =>
       attempt(() => new Intl.DateTimeFormat(this.#locales.value, this.#options.value))
         ?? new Intl.DateTimeFormat(this.#locales.value)
     )
@@ -321,7 +321,7 @@ export class BruhDateTime extends BruhCustomElementBase<BruhDateTimeAttributes> 
       })
     }
 
-    this.#formatted = r([this.#formatter, dateToFormat, rangeEndDateToFormat], () => {
+    this.#formatted = r(() => {
       if (!dateToFormat.value)
         return
 

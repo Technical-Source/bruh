@@ -62,7 +62,7 @@ export class BruhPlural extends BruhCustomElementBase<BruhPluralAttributes> {
   constructor() {
     super()
 
-    this.#locales = r([this.bruh.attributes.locales, userLanguages], () =>
+    this.#locales = r(() =>
       parseLocales([
         ...this.bruh.attributes.locales.value ?? [],
         ...userLanguages.value
@@ -76,7 +76,7 @@ export class BruhPlural extends BruhCustomElementBase<BruhPluralAttributes> {
       mapObject(optionToReactiveAttribute, ([option, attribute]) => [option, attribute.value || undefined]) as Partial<Intl.PluralRulesOptions>
     )
 
-    this.#pluralRules = r([this.#locales, this.#options], () =>
+    this.#pluralRules = r(() =>
       attempt(() => new Intl.PluralRules(this.#locales.value, this.#options.value))
         ?? new Intl.PluralRules(this.#locales.value)
     )
@@ -84,13 +84,13 @@ export class BruhPlural extends BruhCustomElementBase<BruhPluralAttributes> {
     const numberToSelect = this.bruh.attributes.number
     const rangeEndNumberToSelect = this.bruh.attributes["end-number"]
 
-    this.#selected = r([this.#pluralRules, numberToSelect, rangeEndNumberToSelect], () => {
+    this.#selected = r(() => {
       if (!numberToSelect.value)
         return
 
       const pluralRules = this.#pluralRules.value
       const { locale } = pluralRules.resolvedOptions()
-      if (!this.#locales.value.some(preferred => locale === preferred + ""))
+      if (!this.#locales.peek().some(preferred => locale === preferred + ""))
         console.warn(`Resolved locale (${locale}) does not match`)
 
       const category =
